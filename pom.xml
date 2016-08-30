@@ -11,4 +11,11 @@
         <module>client</module>
         <module>service</module>
     </modules>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<java.version>1.8</java.version>
+		<assertj.version>3.5.2</assertj.version>
+		<junit.version>4.11</junit.version>
+	</properties>
 </project>
