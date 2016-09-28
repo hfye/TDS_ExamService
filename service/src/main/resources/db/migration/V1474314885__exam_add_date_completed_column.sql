@@ -1,9 +1,9 @@
 /***********************************************************************************************************************
-  File: retreiveExamAfter.sql
+  File: V1474314885__exam_add_date_completed_column.sql
 
-  Desc: Runs at the end of the test removing the data
+  Desc: Adds a completed date column to the exam table
 
 ***********************************************************************************************************************/
 USE exam;
 
-DELETE FROM exam;
+ALTER TABLE exam ADD COLUMN date_completed DATETIME(3) DEFAULT NULL;
