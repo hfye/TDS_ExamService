@@ -64,7 +64,7 @@ public class SessionServiceImplTest {
         assertThat(maybeSession.isPresent()).isFalse();
     }
 
-    @Test (expected = RestClientException.class)
+    @Test(expected = RestClientException.class)
     public void shouldThrowWhenSessionErrorIsNotNotFound() {
         UUID sessionUUID = UUID.randomUUID();
         String url = String.format("http://localhost:8080/session/%s", sessionUUID);
@@ -76,7 +76,7 @@ public class SessionServiceImplTest {
     @Test
     public void shouldReturnExternalSessionConfigForClientName() {
         String url = "http://localhost:8080/session/external-config/SBAC";
-        ExternalSessionConfiguration externalSessionConfiguration = new ExternalSessionConfiguration("SBAC", "SIMULATION");
+        ExternalSessionConfiguration externalSessionConfiguration = new ExternalSessionConfiguration("SBAC", "SIMULATION", 0, 0);
         when(restTemplate.getForObject(url, ExternalSessionConfiguration.class)).thenReturn(externalSessionConfiguration);
         Optional<ExternalSessionConfiguration> maybeExternalSessionConfiguration = sessionService.findExternalSessionConfigurationByClientName("SBAC");
         verify(restTemplate).getForObject(url, ExternalSessionConfiguration.class);
