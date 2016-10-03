@@ -1,5 +1,6 @@
 package tds.exam.services.impl;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -17,6 +18,7 @@ class AssessmentServiceImpl implements AssessmentService {
     private final RestTemplate restTemplate;
     private final ExamServiceProperties examServiceProperties;
 
+    @Autowired
     public AssessmentServiceImpl(RestTemplate restTemplate, ExamServiceProperties examServiceProperties) {
         this.restTemplate = restTemplate;
         this.examServiceProperties = examServiceProperties;
