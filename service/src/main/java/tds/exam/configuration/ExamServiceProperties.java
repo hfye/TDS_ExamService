@@ -9,6 +9,27 @@ public class ExamServiceProperties {
     private String sessionUrl = "";
     private String studentUrl = "";
     private String assessmentUrl = "";
+    private String configUrl = "";
+
+    /**
+     * Get the URL for the config microservice.  Will always end with "/" unless blank
+     *
+     * @return config microservice URL
+     */
+    public String getConfigUrl() {
+        return configUrl.endsWith("/")
+                ? configUrl
+                : configUrl + "/";
+    }
+
+    /**
+     * @param configUrl not null config url
+     */
+    public void setConfigUrl(String configUrl) {
+        if (configUrl == null) throw new IllegalArgumentException("configUrl cannot be null");
+
+        this.configUrl = configUrl;
+    }
 
     /**
      * Get the URL for the session microservice.  Will always end with "/" unless blank

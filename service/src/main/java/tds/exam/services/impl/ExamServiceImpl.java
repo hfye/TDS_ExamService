@@ -7,16 +7,19 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import tds.common.Response;
 import tds.common.ValidationError;
 import tds.common.data.legacy.LegacyComparer;
+import tds.config.ClientTestProperty;
 import tds.exam.Exam;
 import tds.exam.ExamStatusCode;
 import tds.exam.OpenExamRequest;
 import tds.exam.error.ValidationErrorCode;
+import tds.exam.models.Ability;
 import tds.exam.repositories.ExamQueryRepository;
 import tds.exam.services.AssessmentService;
 import tds.exam.services.ExamService;
@@ -109,6 +112,29 @@ class ExamServiceImpl implements ExamService {
         return new Response<>(exam);
     }
 
+    @Override
+    public Float getInitialAbility(Exam exam, ClientTestProperty property) {
+        Float abilityVal = null;
+        List<Ability> testAbilities = examQueryRepository.findAbilities(exam.getId(), exam.getClientName(),
+                property.getSubjectName(), exam.getStudentId());
+
+        // Attempt to retrieve the most recent ability for the current subject and assessment
+        Ability initialAbility = getMostRecentTestAbility(testAbilities, exam.getAssessmentId(), false);
+        if (initialAbility != null) {
+            abilityVal = initialAbility.getScore();
+        } else if (property.getInitialAbilityBySubject()) {
+            initialAbility = getMostRecentTestAbility(testAbilities, exam.getAssessmentId(), true);
+            if (initialAbility != null) { // and if that didn't work, get the initial ability from the previous year.
+                abilityVal = initialAbility.getScore();
+            } else {
+//                Float initialAbilityFromHistory = examQueryRepository.getMostRecentAbilityFromHistory(exam.getClientName(),
+//                        exam.getSubject(), exam.getStudentId());
+            }
+        }
+
+        return abilityVal;
+    }
+
     private Response<Exam> createExam(OpenExamRequest openExamRequest, Student student, Session session, ExternalSessionConfiguration externalSessionConfiguration) {
         //From OpenTestServiceImpl lines 160 -163
         String examStatus;
@@ -122,6 +148,36 @@ class ExamServiceImpl implements ExamService {
 
 
         return null;
+    }
+
+    /**
+     * Gets the most recent {@link Ability} based on the dateScored value
+     *
+     * @param testAbilityList the list of {@link Ability}s to iterate through
+     * @param test  The test key
+     * @param inverse Specifies whether to search for matches or non-matches of the assessment key
+     * @return
+     */
+    private Ability getMostRecentTestAbility(List<Ability> testAbilityList, String test, boolean inverse) {
+        Ability mostRecentAbility = null;
+
+        for (Ability ability : testAbilityList) {
+            if (inverse) {
+                if (!test.equals(ability.getTest())) {
+                    if (mostRecentAbility == null || mostRecentAbility.getDateScored().isBefore(ability.getDateScored())) {
+                        mostRecentAbility = ability;
+                    }
+                }
+            } else {
+                if (test.equals(ability.getTest())) {
+                    if (mostRecentAbility == null || mostRecentAbility.getDateScored().isBefore(ability.getDateScored())) {
+                        mostRecentAbility = ability;
+                    }
+                }
+            }
+        }
+
+        return mostRecentAbility;
     }
 
     private Optional<ValidationError> canOpenPreviousExam(Exam previousExam, Session currentSession) {

@@ -4,6 +4,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import tds.common.Response;
+import tds.config.ClientTestProperty;
 import tds.exam.Exam;
 import tds.exam.OpenExamRequest;
 
@@ -21,4 +22,6 @@ public interface ExamService {
     Optional<Exam> getExam(UUID uuid);
 
     Response<Exam> openExam(OpenExamRequest openExamRequest);
+
+    Float getInitialAbility(Exam exam, ClientTestProperty property);
 }

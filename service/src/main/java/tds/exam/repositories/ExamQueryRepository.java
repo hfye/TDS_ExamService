@@ -1,9 +1,11 @@
 package tds.exam.repositories;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import tds.exam.Exam;
+import tds.exam.models.Ability;
 
 /**
  * Data access for exams
@@ -26,4 +28,15 @@ public interface ExamQueryRepository {
      * @return the {@link tds.exam.Exam Exam} if found otherwise empty
      */
     Optional<Exam> getLastAvailableExam(long studentId, String assessmentId, String clientName);
+
+    /**
+     * Retrieves a listing of all ability records for the specified exam and student.
+     *
+     * @param exam          the exam for which
+     * @param clientName
+     * @param subject
+     * @param studentId
+     * @return
+     */
+    List<Ability> findAbilities(UUID exam, String clientName, String subject, Long studentId);
 }
