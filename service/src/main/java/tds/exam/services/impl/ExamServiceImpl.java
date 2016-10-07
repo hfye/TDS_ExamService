@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import tds.assessment.SetOfAdminSubject;
 import tds.common.Response;
 import tds.common.ValidationError;
 import tds.common.data.legacy.LegacyComparer;
@@ -21,6 +22,7 @@ import tds.exam.OpenExamRequest;
 import tds.exam.error.ValidationErrorCode;
 import tds.exam.models.Ability;
 import tds.exam.repositories.ExamQueryRepository;
+import tds.exam.repositories.HistoryQueryRepository;
 import tds.exam.services.AssessmentService;
 import tds.exam.services.ExamService;
 import tds.exam.services.SessionService;
@@ -36,16 +38,19 @@ class ExamServiceImpl implements ExamService {
     private static final Logger LOG = LoggerFactory.getLogger(ExamServiceImpl.class);
 
     private final ExamQueryRepository examQueryRepository;
+    private final HistoryQueryRepository historyQueryRepository;
     private final SessionService sessionService;
     private final StudentService studentService;
     private final AssessmentService assessmentService;
 
     @Autowired
     public ExamServiceImpl(ExamQueryRepository examQueryRepository,
+                           HistoryQueryRepository historyQueryRepository,
                            SessionService sessionService,
                            StudentService studentService,
                            AssessmentService assessmentService) {
         this.examQueryRepository = examQueryRepository;
+        this.historyQueryRepository = historyQueryRepository;
         this.sessionService = sessionService;
         this.studentService = studentService;
         this.assessmentService = assessmentService;
@@ -112,9 +117,14 @@ class ExamServiceImpl implements ExamService {
         return new Response<>(exam);
     }
 
+    /**
+     * @inheritDoc
+     */
     @Override
-    public Float getInitialAbility(Exam exam, ClientTestProperty property) {
+    public Optional<Float> getInitialAbility(Exam exam, ClientTestProperty property) {
         Float abilityVal = null;
+        Double slope = property.getAbilitySlope();
+        Double intercept = property.getAbilityIntercept();
         List<Ability> testAbilities = examQueryRepository.findAbilities(exam.getId(), exam.getClientName(),
                 property.getSubjectName(), exam.getStudentId());
 
@@ -127,12 +137,29 @@ class ExamServiceImpl implements ExamService {
             if (initialAbility != null) { // and if that didn't work, get the initial ability from the previous year.
                 abilityVal = initialAbility.getScore();
             } else {
-//                Float initialAbilityFromHistory = examQueryRepository.getMostRecentAbilityFromHistory(exam.getClientName(),
-//                        exam.getSubject(), exam.getStudentId());
+                Optional<Float> initialAbilityFromHistory = historyQueryRepository.findAbilityFromHistoryForSubjectAndStudent(
+                        exam.getClientName(), exam.getSubject(), exam.getStudentId());
+
+                if (initialAbilityFromHistory.isPresent() && slope != null && intercept != null) {
+                    abilityVal = initialAbilityFromHistory.get() * slope.floatValue() + intercept.floatValue();
+                } else if (initialAbilityFromHistory.isPresent()) {
+                    // If no slope/intercept is provided, store base value
+                    abilityVal = initialAbilityFromHistory.get();
+                }
             }
         }
 
-        return abilityVal;
+        //If the ability was not retrieved/set from the above logic, grab it from the item bank DB
+        if (abilityVal == null) {
+            Optional<SetOfAdminSubject> subjectOptional = assessmentService.findSetOfAdminSubjectByKey(exam.getAssessmentId());
+            if (subjectOptional.isPresent()) {
+                abilityVal = subjectOptional.get().getStartAbility();
+            } else {
+                LOG.warn("Could not set the ability for exam ID " + exam.getId());
+            }
+        }
+
+        return Optional.ofNullable(abilityVal);
     }
 
     private Response<Exam> createExam(OpenExamRequest openExamRequest, Student student, Session session, ExternalSessionConfiguration externalSessionConfiguration) {
@@ -153,23 +180,23 @@ class ExamServiceImpl implements ExamService {
     /**
      * Gets the most recent {@link Ability} based on the dateScored value
      *
-     * @param testAbilityList the list of {@link Ability}s to iterate through
-     * @param test  The test key
-     * @param inverse Specifies whether to search for matches or non-matches of the assessment key
+     * @param abilityList the list of {@link Ability}s to iterate through
+     * @param assessmentId  The test key
+     * @param matchesAssessment Specifies whether to search for matches or non-matches of the assessment key
      * @return
      */
-    private Ability getMostRecentTestAbility(List<Ability> testAbilityList, String test, boolean inverse) {
+    private Ability getMostRecentTestAbility(List<Ability> abilityList, String assessmentId, boolean matchesAssessment) {
         Ability mostRecentAbility = null;
 
-        for (Ability ability : testAbilityList) {
-            if (inverse) {
-                if (!test.equals(ability.getTest())) {
+        for (Ability ability : abilityList) {
+            if (matchesAssessment) {
+                if (!assessmentId.equals(ability.getAssessment())) {
                     if (mostRecentAbility == null || mostRecentAbility.getDateScored().isBefore(ability.getDateScored())) {
                         mostRecentAbility = ability;
                     }
                 }
             } else {
-                if (test.equals(ability.getTest())) {
+                if (assessmentId.equals(ability.getAssessment())) {
                     if (mostRecentAbility == null || mostRecentAbility.getDateScored().isBefore(ability.getDateScored())) {
                         mostRecentAbility = ability;
                     }

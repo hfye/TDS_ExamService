@@ -9,9 +9,9 @@ import java.util.UUID;
 public class Ability {
     private UUID examId;
 
-    private String test;
+    private String assessment;
 
-    private Integer timesTaken;
+    private Integer attempts;
 
     private Instant dateScored;
 
@@ -25,20 +25,20 @@ public class Ability {
         this.examId = examId;
     }
 
-    public String getTest() {
-        return test;
+    public String getAssessment() {
+        return assessment;
     }
 
-    public void setTest(String test) {
-        this.test = test;
+    public void setAssessment(String assessment) {
+        this.assessment = assessment;
     }
 
-    public Integer getTimesTaken() {
-        return timesTaken;
+    public Integer getAttempts() {
+        return attempts;
     }
 
-    public void setTimesTaken(Integer timesTaken) {
-        this.timesTaken = timesTaken;
+    public void setAttempts(Integer attempts) {
+        this.attempts = attempts;
     }
 
     public Instant getDateScored() {

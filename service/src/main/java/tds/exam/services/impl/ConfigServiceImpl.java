@@ -1,9 +1,8 @@
 package tds.exam.services.impl;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -14,12 +13,10 @@ import tds.exam.services.ConfigService;
 import java.util.Optional;
 
 /**
- * Created by emunoz on 9/30/16.
+ * Service for retrieving data from the Config Session Microservice
  */
-public class ConfigServiceImpl implements ConfigService {
-
-    private static final Logger LOG = LoggerFactory.getLogger(ConfigServiceImpl.class);
-
+@Service
+class ConfigServiceImpl implements ConfigService {
     private final RestTemplate restTemplate;
     private final ExamServiceProperties examServiceProperties;
 
@@ -32,8 +29,8 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     public Optional<ClientTestProperty> findClientTestPropertyByClientAndAssessment(final String clientName, final String assessmentId) {
         UriComponentsBuilder builder =
-                UriComponentsBuilder
-                        .fromHttpUrl(String.format("%s/%s/%s", examServiceProperties.getConfigUrl(), clientName, assessmentId));
+            UriComponentsBuilder
+                .fromHttpUrl(String.format("%s/%s/%s", examServiceProperties.getConfigUrl(), clientName, assessmentId));
 
         Optional<ClientTestProperty> clientTestPropertyOptional = Optional.empty();
         try {

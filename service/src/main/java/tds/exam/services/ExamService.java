@@ -23,5 +23,12 @@ public interface ExamService {
 
     Response<Exam> openExam(OpenExamRequest openExamRequest);
 
-    Float getInitialAbility(Exam exam, ClientTestProperty property);
+    /**
+     * Retrieves the initial ability value for an {@link Exam}.
+     *
+     * @param exam      the exam to retrieve an ability for.
+     * @param clientTestProperty  properties object for the exam.
+     * @return  the initial ability for an {@link Exam}.
+     */
+    Optional<Float> getInitialAbility(Exam exam, ClientTestProperty clientTestProperty);
 }

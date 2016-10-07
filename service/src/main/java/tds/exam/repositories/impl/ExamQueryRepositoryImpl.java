@@ -122,24 +122,24 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
         parameters.put("studentId", studentId);
 
         final String SQL =
-                        "SELECT\n" +
-                            "exam.id as examId,\n" +
-                            "exam.assessment_id as assessmentId,\n" +
-                            "exam.times_taken as timesTaken,\n" +
-                            "exam.date_scored as dateScored,\n" +
-                            "scores.value as score\n" +
-                        "FROM\n" +
-                            "exam, scores\n" +
-                        "WHERE\n" +
-                            "clientname = :clientName AND\n" +
-                            "exam.student_id = :studentId AND\n" +
-                            "exam.subject = :subject AND\n" +
-                            "exam.date_deleted is null AND\n" +
-                            "exam.date_scored is not null AND\n" +
-                            "exam.id <> :examId AND\n" +
-                            "exam.id = SCORE.fk_scores_examid_exam AND\n" +
-                            "scores.use_for_ability = 1 AND\n" +
-                            "scores.value is not null";
+            "SELECT\n" +
+                "exam.exam_id,\n" +
+                "exam.assessment_id,\n" +
+                "exam.attempts,\n" +
+                "exam.date_scored,\n" +
+                "scores.value AS score\n" +
+            "FROM\n" +
+                "exam, scores\n" +
+            "WHERE\n" +
+                "exam.client_name = :clientName AND\n" +
+                "exam.student_id = :studentId AND\n" +
+                "exam.subject = :subject AND\n" +
+                "exam.date_deleted IS NULL AND\n" +
+                "exam.date_scored IS NOT NULL AND\n" +
+                "exam.exam_id <> :examId AND\n" +
+                "exam.exam_id = scores.fk_scores_examid_exam AND\n" +
+                "scores.use_for_ability = 1 AND\n" +
+                "scores.value IS NOT NULL";
 
 
         return jdbcTemplate.query(SQL, parameters, new AbilityRowMapper());
@@ -149,10 +149,10 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
         @Override
         public Ability mapRow(ResultSet rs, int rowNum) throws SQLException {
             Ability ability = new Ability();
-            ability.setExamId(UuidAdapter.getUUIDFromBytes(rs.getBytes("examId")));
-            ability.setDateScored(ResultSetMapperUtility.mapTimeStampToInstant(rs, "dateScored"));
-            ability.setTimesTaken((Integer)rs.getObject("timesTaken"));
-            ability.setTest(rs.getString("test"));
+            ability.setExamId(UuidAdapter.getUUIDFromBytes(rs.getBytes("exam_id")));
+            ability.setDateScored(ResultSetMapperUtility.mapTimeStampToInstant(rs, "date_scored"));
+            ability.setAttempts((Integer)rs.getObject("attempts"));
+            ability.setAssessment(rs.getString("assessment_id"));
             ability.setScore(rs.getObject("score", Float.class));
             return ability;
         }

@@ -6,16 +6,22 @@ import org.junit.Test;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import tds.assessment.SetOfAdminSubject;
 import tds.common.Response;
 import tds.common.ValidationError;
+import tds.config.ClientTestProperty;
 import tds.exam.Exam;
 import tds.exam.ExamStatusCode;
 import tds.exam.OpenExamRequest;
 import tds.exam.error.ValidationErrorCode;
+import tds.exam.models.Ability;
 import tds.exam.repositories.ExamQueryRepository;
+import tds.exam.repositories.HistoryQueryRepository;
 import tds.exam.services.AssessmentService;
 import tds.exam.services.SessionService;
 import tds.exam.services.StudentService;
@@ -29,6 +35,7 @@ import static org.mockito.Mockito.when;
 
 public class ExamServiceImplTest {
     private ExamQueryRepository repository;
+    private HistoryQueryRepository historyRepository;
     private ExamServiceImpl examService;
     private SessionService sessionService;
     private StudentService studentService;
@@ -37,10 +44,11 @@ public class ExamServiceImplTest {
     @Before
     public void setUp() {
         repository = mock(ExamQueryRepository.class);
+        historyRepository = mock(HistoryQueryRepository.class);
         sessionService = mock(SessionService.class);
         studentService = mock(StudentService.class);
         assessmentService = mock(AssessmentService.class);
-        examService = new ExamServiceImpl(repository, sessionService, studentService, assessmentService);
+        examService = new ExamServiceImpl(repository, historyRepository, sessionService, studentService, assessmentService);
     }
 
     @After
@@ -394,6 +402,355 @@ public class ExamServiceImplTest {
     }
 
     @Test
+    public void shouldGetInitialAbilityFromScoresForSameAssessment() {
+        final UUID sessionId = UUID.randomUUID();
+        final UUID thisExamId = UUID.randomUUID();
+        final String assessmentId = "SBAC ELA 3-ELA-3";
+        final String clientName = "SBAC_TEST1";
+        final long studentId = 9898L;
+        final float assessmentAbilityVal = 99F;
+
+        ClientTestProperty clientTestProperty = new ClientTestProperty.Builder()
+                .withClientName(clientName)
+                .withAssessmentId(assessmentId)
+                .withMaxOpportunities(3)
+                .withPrefetch(2)
+                .withIsSelectable(true)
+                .withLabel("Grades 3 - 5 MATH")
+                .withSubjectName("ELA")
+                .withAccommodationFamily("MATH")
+                .withRtsFormField("tds-testform")
+                .withRequireRtsWindow(true)
+                .withRtsModeField("tds-testmode")
+                .withRequireRtsMode(true)
+                .withRequireRtsModeWindow(true)
+                .withDeleteUnansweredItems(true)
+                .withInitialAbilityBySubject(true)
+                .withAbilitySlope(1D)
+                .withAbilityIntercept(2D)
+                .build();
+
+        Exam thisExam = createExam(sessionId, thisExamId, assessmentId, clientName, studentId);
+
+        Ability sameAssessmentAbility = new Ability();
+        sameAssessmentAbility.setExamId(UUID.randomUUID());
+        sameAssessmentAbility.setScore(assessmentAbilityVal);
+        sameAssessmentAbility.setAssessment(assessmentId);
+        sameAssessmentAbility.setAttempts(1);
+        sameAssessmentAbility.setDateScored(Instant.now());
+
+        Ability differentAssessmentAbility = new Ability();
+        differentAssessmentAbility.setExamId(UUID.randomUUID());
+        differentAssessmentAbility.setScore(50F);
+        differentAssessmentAbility.setAssessment(assessmentId);
+        differentAssessmentAbility.setAttempts(1);
+        differentAssessmentAbility.setDateScored(Instant.now());
+
+        List<Ability> abilities = new ArrayList<>();
+        abilities.add(sameAssessmentAbility);
+        abilities.add(differentAssessmentAbility);
+
+        abilities.add(sameAssessmentAbility);
+        abilities.add(differentAssessmentAbility);
+        when(repository.findAbilities(thisExamId, clientName, "ELA", studentId)).thenReturn(abilities);
+        Optional<Float> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
+
+        assertThat(maybeAbilityReturned.get()).isEqualTo(assessmentAbilityVal);
+    }
+
+    @Test
+    public void shouldGetInitialAbilityFromHistoryWithoutSlopeIntercept() {
+        final UUID sessionId = UUID.randomUUID();
+        final UUID thisExamId = UUID.randomUUID();
+        final String assessmentId = "SBAC ELA 3-ELA-3";
+        final String clientName = "SBAC_TEST4";
+        final long studentId = 9897L;
+        final float assessmentAbilityVal = 99F;
+
+        // Null slop/intercept for this test case
+        ClientTestProperty clientTestProperty = new ClientTestProperty.Builder()
+                .withClientName(clientName)
+                .withAssessmentId(assessmentId)
+                .withMaxOpportunities(3)
+                .withPrefetch(2)
+                .withIsSelectable(true)
+                .withLabel("Grades 3 - 5 MATH")
+                .withSubjectName("ELA")
+                .withAccommodationFamily("MATH")
+                .withRtsFormField("tds-testform")
+                .withRequireRtsWindow(true)
+                .withRtsModeField("tds-testmode")
+                .withRequireRtsMode(true)
+                .withRequireRtsModeWindow(true)
+                .withDeleteUnansweredItems(true)
+                .withInitialAbilityBySubject(true)
+                .build();
+
+        Exam thisExam = createExam(sessionId, thisExamId, assessmentId, clientName, studentId);
+
+        Ability sameAssessmentAbility = new Ability();
+        sameAssessmentAbility.setExamId(UUID.randomUUID());
+        sameAssessmentAbility.setScore(assessmentAbilityVal);
+        sameAssessmentAbility.setAssessment(assessmentId);
+        sameAssessmentAbility.setAttempts(1);
+        sameAssessmentAbility.setDateScored(Instant.now());
+
+        Ability differentAssessmentAbility = new Ability();
+        differentAssessmentAbility.setExamId(UUID.randomUUID());
+        differentAssessmentAbility.setScore(50F);
+        differentAssessmentAbility.setAssessment(assessmentId);
+        differentAssessmentAbility.setAttempts(1);
+        differentAssessmentAbility.setDateScored(Instant.now());
+
+        List<Ability> abilities = new ArrayList<>();
+        Optional<Float> abilityOptional = Optional.of(new Float(66));
+        when(repository.findAbilities(thisExamId, clientName, "ELA", studentId)).thenReturn(abilities);
+        when(historyRepository.findAbilityFromHistoryForSubjectAndStudent(clientName, "ELA", studentId))
+                .thenReturn(abilityOptional);
+        Optional<Float> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
+        assertThat(maybeAbilityReturned.get()).isEqualTo(abilityOptional.get());
+    }
+
+    @Test
+    public void shouldGetNullInitialAbility() {
+        final UUID sessionId = UUID.randomUUID();
+        final UUID thisExamId = UUID.randomUUID();
+        final String assessmentId = "SBAC ELA 3-ELA-3";
+        final String clientName = "SBAC_TEST7";
+        final long studentId = 9898L;
+        final float assessmentAbilityVal = 99F;
+        final Double slope = 2D;
+        final Double intercept = 1D;
+
+        SetOfAdminSubject setOfAdminSubject = new SetOfAdminSubject(
+                "(SBAC)SBAC ELA 3-ELA-3-Spring-2112a",
+                assessmentId,
+                false,
+                "jeff-j-sort",
+                assessmentAbilityVal
+        );
+
+        ClientTestProperty clientTestProperty = new ClientTestProperty.Builder()
+                .withClientName(clientName)
+                .withAssessmentId(assessmentId)
+                .withMaxOpportunities(3)
+                .withPrefetch(2)
+                .withIsSelectable(true)
+                .withLabel("Grades 3 - 5 MATH")
+                .withSubjectName("ELA")
+                .withAccommodationFamily("MATH")
+                .withRtsFormField("tds-testform")
+                .withRequireRtsWindow(true)
+                .withRtsModeField("tds-testmode")
+                .withRequireRtsMode(true)
+                .withRequireRtsModeWindow(true)
+                .withDeleteUnansweredItems(true)
+                .withInitialAbilityBySubject(true)
+                .withAbilitySlope(slope)
+                .withAbilityIntercept(intercept)
+                .build();
+
+        Exam thisExam = createExam(sessionId, thisExamId, assessmentId, clientName, studentId);
+
+        Ability sameAssessmentAbility = new Ability();
+        sameAssessmentAbility.setExamId(UUID.randomUUID());
+        sameAssessmentAbility.setScore(assessmentAbilityVal);
+        sameAssessmentAbility.setAssessment(assessmentId);
+        sameAssessmentAbility.setAttempts(1);
+        sameAssessmentAbility.setDateScored(Instant.now());
+
+        Ability differentAssessmentAbility = new Ability();
+        differentAssessmentAbility.setExamId(UUID.randomUUID());
+        differentAssessmentAbility.setScore(50F);
+        differentAssessmentAbility.setAssessment(assessmentId);
+        differentAssessmentAbility.setAttempts(1);
+        differentAssessmentAbility.setDateScored(Instant.now());
+
+        List<Ability> abilities = new ArrayList<>();
+        when(repository.findAbilities(thisExamId, clientName, "ELA", studentId)).thenReturn(abilities);
+        when(historyRepository.findAbilityFromHistoryForSubjectAndStudent(clientName, "ELA", studentId))
+                .thenReturn(Optional.empty());
+        when(assessmentService.findSetOfAdminSubjectByKey(thisExam.getAssessmentId())).thenReturn(Optional.empty());
+        Optional<Float> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
+        assertThat(maybeAbilityReturned.isPresent()).isFalse();
+    }
+
+    @Test
+    public void shouldGetInitialAbilityFromItembank() {
+        final UUID sessionId = UUID.randomUUID();
+        final UUID thisExamId = UUID.randomUUID();
+        final String assessmentId = "SBAC ELA 3-ELA-3";
+        final String clientName = "SBAC_TEST6";
+        final long studentId = 9898L;
+        final float assessmentAbilityVal = 99F;
+        final Double slope = 2D;
+        final Double intercept = 1D;
+
+        SetOfAdminSubject setOfAdminSubject = new SetOfAdminSubject(
+                "(SBAC)SBAC ELA 3-ELA-3-Spring-2112a",
+                assessmentId,
+                false,
+                "jeff-j-sort",
+                assessmentAbilityVal
+        );
+
+        ClientTestProperty clientTestProperty = new ClientTestProperty.Builder()
+                .withClientName(clientName)
+                .withAssessmentId(assessmentId)
+                .withMaxOpportunities(3)
+                .withPrefetch(2)
+                .withIsSelectable(true)
+                .withLabel("Grades 3 - 5 MATH")
+                .withSubjectName("ELA")
+                .withAccommodationFamily("MATH")
+                .withRtsFormField("tds-testform")
+                .withRequireRtsWindow(true)
+                .withRtsModeField("tds-testmode")
+                .withRequireRtsMode(true)
+                .withRequireRtsModeWindow(true)
+                .withDeleteUnansweredItems(true)
+                .withInitialAbilityBySubject(true)
+                .withAbilitySlope(slope)
+                .withAbilityIntercept(intercept)
+                .build();
+
+        Exam thisExam = createExam(sessionId, thisExamId, assessmentId, clientName, studentId);
+
+        Ability sameAssessmentAbility = new Ability();
+        sameAssessmentAbility.setExamId(UUID.randomUUID());
+        sameAssessmentAbility.setScore(assessmentAbilityVal);
+        sameAssessmentAbility.setAssessment(assessmentId);
+        sameAssessmentAbility.setAttempts(1);
+        sameAssessmentAbility.setDateScored(Instant.now());
+
+        Ability differentAssessmentAbility = new Ability();
+        differentAssessmentAbility.setExamId(UUID.randomUUID());
+        differentAssessmentAbility.setScore(50F);
+        differentAssessmentAbility.setAssessment(assessmentId);
+        differentAssessmentAbility.setAttempts(1);
+        differentAssessmentAbility.setDateScored(Instant.now());
+
+        List<Ability> abilities = new ArrayList<>();
+        when(repository.findAbilities(thisExamId, clientName, "ELA", studentId)).thenReturn(abilities);
+        when(historyRepository.findAbilityFromHistoryForSubjectAndStudent(clientName, "ELA", studentId))
+                .thenReturn(Optional.empty());
+        when(assessmentService.findSetOfAdminSubjectByKey(thisExam.getAssessmentId())).thenReturn(Optional.of(setOfAdminSubject));
+        Optional<Float> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
+        assertThat(maybeAbilityReturned.get()).isEqualTo(assessmentAbilityVal);
+    }
+
+    @Test
+    public void shouldGetInitialAbilityFromHistoryWithSlopeIntercept() {
+        final UUID sessionId = UUID.randomUUID();
+        final UUID thisExamId = UUID.randomUUID();
+        final String assessmentId = "SBAC ELA 3-ELA-3";
+        final String clientName = "SBAC_TEST3";
+        final long studentId = 9898L;
+        final float assessmentAbilityVal = 99F;
+        final Double slope = 2D;
+        final Double intercept = 1D;
+
+        ClientTestProperty clientTestProperty = new ClientTestProperty.Builder()
+                .withClientName(clientName)
+                .withAssessmentId(assessmentId)
+                .withMaxOpportunities(3)
+                .withPrefetch(2)
+                .withIsSelectable(true)
+                .withLabel("Grades 3 - 5 MATH")
+                .withSubjectName("ELA")
+                .withAccommodationFamily("MATH")
+                .withRtsFormField("tds-testform")
+                .withRequireRtsWindow(true)
+                .withRtsModeField("tds-testmode")
+                .withRequireRtsMode(true)
+                .withRequireRtsModeWindow(true)
+                .withDeleteUnansweredItems(true)
+                .withInitialAbilityBySubject(true)
+                .withAbilitySlope(slope)
+                .withAbilityIntercept(intercept)
+                .build();
+
+        Exam thisExam = createExam(sessionId, thisExamId, assessmentId, clientName, studentId);
+
+        Ability sameAssessmentAbility = new Ability();
+        sameAssessmentAbility.setExamId(UUID.randomUUID());
+        sameAssessmentAbility.setScore(assessmentAbilityVal);
+        sameAssessmentAbility.setAssessment(assessmentId);
+        sameAssessmentAbility.setAttempts(1);
+        sameAssessmentAbility.setDateScored(Instant.now());
+
+        Ability differentAssessmentAbility = new Ability();
+        differentAssessmentAbility.setExamId(UUID.randomUUID());
+        differentAssessmentAbility.setScore(50F);
+        differentAssessmentAbility.setAssessment(assessmentId);
+        differentAssessmentAbility.setAttempts(1);
+        differentAssessmentAbility.setDateScored(Instant.now());
+
+        List<Ability> abilities = new ArrayList<>();
+        Optional<Float> abilityOptional = Optional.of(new Float(66));
+        when(repository.findAbilities(thisExamId, clientName, "ELA", studentId)).thenReturn(abilities);
+        when(historyRepository.findAbilityFromHistoryForSubjectAndStudent(clientName, "ELA", studentId))
+                .thenReturn(abilityOptional);
+        Optional<Float> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
+        // y=mx+b
+        Double abilityCalulated = abilityOptional.get() * slope + intercept;
+        assertThat(maybeAbilityReturned.get()).isEqualTo(abilityCalulated.floatValue());
+    }
+
+    @Test
+    public void shouldGetInitialAbilityFromScoresForDifferentAssessment() {
+        final UUID sessionId = UUID.randomUUID();
+        final UUID thisExamId = UUID.randomUUID();
+        final String assessmentId = "SBAC ELA 3-ELA-3";
+        final String clientName = "SBAC_TEST2";
+        final long studentId = 9899L;
+        final float assessmentAbilityVal = 75F;
+
+        ClientTestProperty clientTestProperty = new ClientTestProperty.Builder()
+                .withClientName(clientName)
+                .withAssessmentId(assessmentId)
+                .withMaxOpportunities(3)
+                .withPrefetch(2)
+                .withIsSelectable(true)
+                .withLabel("Grades 3 - 5 MATH")
+                .withSubjectName("ELA")
+                .withAccommodationFamily("MATH")
+                .withRtsFormField("tds-testform")
+                .withRequireRtsWindow(true)
+                .withRtsModeField("tds-testmode")
+                .withRequireRtsMode(true)
+                .withRequireRtsModeWindow(true)
+                .withDeleteUnansweredItems(true)
+                .withInitialAbilityBySubject(true)
+                .withAbilitySlope(1D)
+                .withAbilityIntercept(2D)
+                .build();
+
+        Exam thisExam = createExam(sessionId, thisExamId, assessmentId, clientName, studentId);
+
+        Ability sameAssessmentAbility = new Ability();
+        sameAssessmentAbility.setExamId(UUID.randomUUID());
+        sameAssessmentAbility.setScore(assessmentAbilityVal);
+        sameAssessmentAbility.setAssessment("assessmentid-2");
+        sameAssessmentAbility.setAttempts(1);
+        sameAssessmentAbility.setDateScored(Instant.now());
+
+        Ability differentAssessmentAbility = new Ability();
+        differentAssessmentAbility.setExamId(UUID.randomUUID());
+        differentAssessmentAbility.setScore(50F);
+        differentAssessmentAbility.setAssessment("assessmentid-2");
+        differentAssessmentAbility.setAttempts(1);
+        differentAssessmentAbility.setDateScored(Instant.now());
+
+        List<Ability> abilities = new ArrayList<>();
+        abilities.add(sameAssessmentAbility);
+        abilities.add(differentAssessmentAbility);
+        when(repository.findAbilities(thisExamId, clientName, "ELA", studentId)).thenReturn(abilities);
+        Optional<Float> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
+        assertThat(maybeAbilityReturned.get()).isEqualTo(assessmentAbilityVal);
+    }
+
+    @Test
     public void shouldOpenPreviousExamIfPreviousExamIsInactiveStage() {
         UUID sessionId = UUID.randomUUID();
         OpenExamRequest openExamRequest = new OpenExamRequest();
@@ -431,5 +788,20 @@ public class ExamServiceImplTest {
         assertThat(examResponse.getErrors()).isNotPresent();
         assertThat(examResponse.getData()).isPresent();
         assertThat(examResponse.getData().get().getId()).isEqualTo(previousExam.getId());
+    }
+
+
+    private Exam createExam(UUID sessionId, UUID thisExamId, String assessmentId, String clientName, long studentId) {
+        return new Exam.Builder()
+                .withId(thisExamId)
+                .withClientName(clientName)
+                .withSessionId(sessionId)
+                .withAssessmentId(assessmentId)
+                .withSubject("ELA")
+                .withStudentId(studentId)
+                .withStatus(new ExamStatusCode.Builder().withStage(ExamStatusCode.STAGE_OPEN).build())
+                .withDateChanged(Instant.now())
+                .withDateScored(Instant.now())
+                .build();
     }
 }
