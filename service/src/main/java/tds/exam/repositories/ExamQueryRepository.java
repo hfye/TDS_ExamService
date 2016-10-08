@@ -32,11 +32,11 @@ public interface ExamQueryRepository {
     /**
      * Retrieves a listing of all ability records for the specified exam and student.
      *
-     * @param exam          the exam for which
-     * @param clientName
-     * @param subject
-     * @param studentId
-     * @return
+     * @param exam          the exam for which to exclude from the ability query
+     * @param clientName    client name for the exam
+     * @param subject       the subject of the exam
+     * @param studentId     the student taking the exam
+     * @return  a list of {@link Ability} objects for past exams
      */
     List<Ability> findAbilities(UUID exam, String clientName, String subject, Long studentId);
 }

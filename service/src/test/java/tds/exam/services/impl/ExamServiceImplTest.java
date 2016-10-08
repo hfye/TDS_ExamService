@@ -435,14 +435,14 @@ public class ExamServiceImplTest {
         Ability sameAssessmentAbility = new Ability();
         sameAssessmentAbility.setExamId(UUID.randomUUID());
         sameAssessmentAbility.setScore(assessmentAbilityVal);
-        sameAssessmentAbility.setAssessment(assessmentId);
+        sameAssessmentAbility.setAssessmentId(assessmentId);
         sameAssessmentAbility.setAttempts(1);
         sameAssessmentAbility.setDateScored(Instant.now());
 
         Ability differentAssessmentAbility = new Ability();
         differentAssessmentAbility.setExamId(UUID.randomUUID());
         differentAssessmentAbility.setScore(50F);
-        differentAssessmentAbility.setAssessment(assessmentId);
+        differentAssessmentAbility.setAssessmentId(assessmentId);
         differentAssessmentAbility.setAttempts(1);
         differentAssessmentAbility.setDateScored(Instant.now());
 
@@ -491,14 +491,14 @@ public class ExamServiceImplTest {
         Ability sameAssessmentAbility = new Ability();
         sameAssessmentAbility.setExamId(UUID.randomUUID());
         sameAssessmentAbility.setScore(assessmentAbilityVal);
-        sameAssessmentAbility.setAssessment(assessmentId);
+        sameAssessmentAbility.setAssessmentId(assessmentId);
         sameAssessmentAbility.setAttempts(1);
         sameAssessmentAbility.setDateScored(Instant.now());
 
         Ability differentAssessmentAbility = new Ability();
         differentAssessmentAbility.setExamId(UUID.randomUUID());
         differentAssessmentAbility.setScore(50F);
-        differentAssessmentAbility.setAssessment(assessmentId);
+        differentAssessmentAbility.setAssessmentId(assessmentId);
         differentAssessmentAbility.setAttempts(1);
         differentAssessmentAbility.setDateScored(Instant.now());
 
@@ -555,14 +555,14 @@ public class ExamServiceImplTest {
         Ability sameAssessmentAbility = new Ability();
         sameAssessmentAbility.setExamId(UUID.randomUUID());
         sameAssessmentAbility.setScore(assessmentAbilityVal);
-        sameAssessmentAbility.setAssessment(assessmentId);
+        sameAssessmentAbility.setAssessmentId(assessmentId);
         sameAssessmentAbility.setAttempts(1);
         sameAssessmentAbility.setDateScored(Instant.now());
 
         Ability differentAssessmentAbility = new Ability();
         differentAssessmentAbility.setExamId(UUID.randomUUID());
         differentAssessmentAbility.setScore(50F);
-        differentAssessmentAbility.setAssessment(assessmentId);
+        differentAssessmentAbility.setAssessmentId(assessmentId);
         differentAssessmentAbility.setAttempts(1);
         differentAssessmentAbility.setDateScored(Instant.now());
 
@@ -619,14 +619,14 @@ public class ExamServiceImplTest {
         Ability sameAssessmentAbility = new Ability();
         sameAssessmentAbility.setExamId(UUID.randomUUID());
         sameAssessmentAbility.setScore(assessmentAbilityVal);
-        sameAssessmentAbility.setAssessment(assessmentId);
+        sameAssessmentAbility.setAssessmentId(assessmentId);
         sameAssessmentAbility.setAttempts(1);
         sameAssessmentAbility.setDateScored(Instant.now());
 
         Ability differentAssessmentAbility = new Ability();
         differentAssessmentAbility.setExamId(UUID.randomUUID());
         differentAssessmentAbility.setScore(50F);
-        differentAssessmentAbility.setAssessment(assessmentId);
+        differentAssessmentAbility.setAssessmentId(assessmentId);
         differentAssessmentAbility.setAttempts(1);
         differentAssessmentAbility.setDateScored(Instant.now());
 
@@ -675,26 +675,26 @@ public class ExamServiceImplTest {
         Ability sameAssessmentAbility = new Ability();
         sameAssessmentAbility.setExamId(UUID.randomUUID());
         sameAssessmentAbility.setScore(assessmentAbilityVal);
-        sameAssessmentAbility.setAssessment(assessmentId);
+        sameAssessmentAbility.setAssessmentId(assessmentId);
         sameAssessmentAbility.setAttempts(1);
         sameAssessmentAbility.setDateScored(Instant.now());
 
         Ability differentAssessmentAbility = new Ability();
         differentAssessmentAbility.setExamId(UUID.randomUUID());
         differentAssessmentAbility.setScore(50F);
-        differentAssessmentAbility.setAssessment(assessmentId);
+        differentAssessmentAbility.setAssessmentId(assessmentId);
         differentAssessmentAbility.setAttempts(1);
         differentAssessmentAbility.setDateScored(Instant.now());
 
         List<Ability> abilities = new ArrayList<>();
-        Optional<Float> abilityOptional = Optional.of(new Float(66));
+        Optional<Float> abilityOptional = Optional.of(66F);
         when(repository.findAbilities(thisExamId, clientName, "ELA", studentId)).thenReturn(abilities);
         when(historyRepository.findAbilityFromHistoryForSubjectAndStudent(clientName, "ELA", studentId))
                 .thenReturn(abilityOptional);
         Optional<Float> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
         // y=mx+b
-        Double abilityCalulated = abilityOptional.get() * slope + intercept;
-        assertThat(maybeAbilityReturned.get()).isEqualTo(abilityCalulated.floatValue());
+        double abilityCalulated = abilityOptional.get() * slope + intercept;
+        assertThat(maybeAbilityReturned.get()).isEqualTo((float)abilityCalulated);
     }
 
     @Test
@@ -731,14 +731,14 @@ public class ExamServiceImplTest {
         Ability sameAssessmentAbility = new Ability();
         sameAssessmentAbility.setExamId(UUID.randomUUID());
         sameAssessmentAbility.setScore(assessmentAbilityVal);
-        sameAssessmentAbility.setAssessment("assessmentid-2");
+        sameAssessmentAbility.setAssessmentId("assessmentid-2");
         sameAssessmentAbility.setAttempts(1);
         sameAssessmentAbility.setDateScored(Instant.now());
 
         Ability differentAssessmentAbility = new Ability();
         differentAssessmentAbility.setExamId(UUID.randomUUID());
         differentAssessmentAbility.setScore(50F);
-        differentAssessmentAbility.setAssessment("assessmentid-2");
+        differentAssessmentAbility.setAssessmentId("assessmentid-2");
         differentAssessmentAbility.setAttempts(1);
         differentAssessmentAbility.setDateScored(Instant.now());
 

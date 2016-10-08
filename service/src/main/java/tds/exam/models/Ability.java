@@ -4,17 +4,32 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Created by emunoz on 10/3/16.
+ * Model representing an exam's ability.
  */
 public class Ability {
+    /**
+     * The id of the exam
+     */
     private UUID examId;
 
-    private String assessment;
+    /**
+     * The assessment id
+     */
+    private String assessmentId;
 
+    /**
+     * The attempt number of the exam
+     */
     private Integer attempts;
 
+    /**
+     * The date when the exam was scored
+     */
     private Instant dateScored;
 
+    /**
+     * The ability score value
+     */
     private Float score;
 
     public UUID getExamId() {
@@ -25,12 +40,12 @@ public class Ability {
         this.examId = examId;
     }
 
-    public String getAssessment() {
-        return assessment;
+    public String getAssessmentId() {
+        return assessmentId;
     }
 
-    public void setAssessment(String assessment) {
-        this.assessment = assessment;
+    public void setAssessmentId(String assessmentId) {
+        this.assessmentId = assessmentId;
     }
 
     public Integer getAttempts() {

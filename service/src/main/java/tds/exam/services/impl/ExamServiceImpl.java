@@ -122,44 +122,47 @@ class ExamServiceImpl implements ExamService {
      */
     @Override
     public Optional<Float> getInitialAbility(Exam exam, ClientTestProperty property) {
-        Float abilityVal = null;
+        Optional<Float> ability = Optional.empty();
         Double slope = property.getAbilitySlope();
         Double intercept = property.getAbilityIntercept();
         List<Ability> testAbilities = examQueryRepository.findAbilities(exam.getId(), exam.getClientName(),
                 property.getSubjectName(), exam.getStudentId());
 
         // Attempt to retrieve the most recent ability for the current subject and assessment
-        Ability initialAbility = getMostRecentTestAbility(testAbilities, exam.getAssessmentId(), false);
-        if (initialAbility != null) {
-            abilityVal = initialAbility.getScore();
+        Optional<Ability> initialAbility = getMostRecentTestAbility(testAbilities, exam.getAssessmentId(), false);
+        if (initialAbility.isPresent()) {
+            ability = Optional.of(initialAbility.get().getScore());
         } else if (property.getInitialAbilityBySubject()) {
+            // if no ability for a similar assessment was retrieved above, attempt to get the initial ability for another
+            // assessment of the same subject
             initialAbility = getMostRecentTestAbility(testAbilities, exam.getAssessmentId(), true);
-            if (initialAbility != null) { // and if that didn't work, get the initial ability from the previous year.
-                abilityVal = initialAbility.getScore();
+            if (initialAbility.isPresent()) {
+                ability = Optional.of(initialAbility.get().getScore());
             } else {
+                // if no value was returned from the previous call, get the initial ability from the previous year
                 Optional<Float> initialAbilityFromHistory = historyQueryRepository.findAbilityFromHistoryForSubjectAndStudent(
                         exam.getClientName(), exam.getSubject(), exam.getStudentId());
 
                 if (initialAbilityFromHistory.isPresent() && slope != null && intercept != null) {
-                    abilityVal = initialAbilityFromHistory.get() * slope.floatValue() + intercept.floatValue();
+                    ability = Optional.of(initialAbilityFromHistory.get() * slope.floatValue() + intercept.floatValue());
                 } else if (initialAbilityFromHistory.isPresent()) {
                     // If no slope/intercept is provided, store base value
-                    abilityVal = initialAbilityFromHistory.get();
+                    ability = initialAbilityFromHistory;
                 }
             }
         }
 
-        //If the ability was not retrieved/set from the above logic, grab it from the item bank DB
-        if (abilityVal == null) {
+        // If the ability was not retrieved from any of the exam tables, query the assessment service
+        if (!ability.isPresent()) {
             Optional<SetOfAdminSubject> subjectOptional = assessmentService.findSetOfAdminSubjectByKey(exam.getAssessmentId());
             if (subjectOptional.isPresent()) {
-                abilityVal = subjectOptional.get().getStartAbility();
+                ability = Optional.of(subjectOptional.get().getStartAbility());
             } else {
                 LOG.warn("Could not set the ability for exam ID " + exam.getId());
             }
         }
 
-        return Optional.ofNullable(abilityVal);
+        return ability;
     }
 
     private Response<Exam> createExam(OpenExamRequest openExamRequest, Student student, Session session, ExternalSessionConfiguration externalSessionConfiguration) {
@@ -185,18 +188,18 @@ class ExamServiceImpl implements ExamService {
      * @param matchesAssessment Specifies whether to search for matches or non-matches of the assessment key
      * @return
      */
-    private Ability getMostRecentTestAbility(List<Ability> abilityList, String assessmentId, boolean matchesAssessment) {
+    private Optional<Ability> getMostRecentTestAbility(List<Ability> abilityList, String assessmentId, boolean matchesAssessment) {
         Ability mostRecentAbility = null;
 
         for (Ability ability : abilityList) {
             if (matchesAssessment) {
-                if (!assessmentId.equals(ability.getAssessment())) {
+                if (!assessmentId.equals(ability.getAssessmentId())) {
                     if (mostRecentAbility == null || mostRecentAbility.getDateScored().isBefore(ability.getDateScored())) {
                         mostRecentAbility = ability;
                     }
                 }
             } else {
-                if (assessmentId.equals(ability.getAssessment())) {
+                if (assessmentId.equals(ability.getAssessmentId())) {
                     if (mostRecentAbility == null || mostRecentAbility.getDateScored().isBefore(ability.getDateScored())) {
                         mostRecentAbility = ability;
                     }
@@ -204,7 +207,7 @@ class ExamServiceImpl implements ExamService {
             }
         }
 
-        return mostRecentAbility;
+        return Optional.ofNullable(mostRecentAbility);
     }
 
     private Optional<ValidationError> canOpenPreviousExam(Exam previousExam, Session currentSession) {

@@ -152,7 +152,7 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
             ability.setExamId(UuidAdapter.getUUIDFromBytes(rs.getBytes("exam_id")));
             ability.setDateScored(ResultSetMapperUtility.mapTimeStampToInstant(rs, "date_scored"));
             ability.setAttempts((Integer)rs.getObject("attempts"));
-            ability.setAssessment(rs.getString("assessment_id"));
+            ability.setAssessmentId(rs.getString("assessment_id"));
             ability.setScore(rs.getObject("score", Float.class));
             return ability;
         }
