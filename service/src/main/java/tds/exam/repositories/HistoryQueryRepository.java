@@ -14,5 +14,5 @@ public interface HistoryQueryRepository {
      * @param studentId     Id of the student to obtain the ability for
      * @return
      */
-    Optional<Float> findAbilityFromHistoryForSubjectAndStudent(String clientName, String subject, Long studentId);
+    Optional<Double> findAbilityFromHistoryForSubjectAndStudent(String clientName, String subject, Long studentId);
 }

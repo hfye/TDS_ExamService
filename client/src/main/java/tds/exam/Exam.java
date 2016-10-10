@@ -158,7 +158,9 @@ public class Exam {
         return clientName;
     }
 
-    public String getSubject() { return subject; }
+    public String getSubject() {
+        return subject;
+    }
 
     public Instant getDateStarted() {
         return dateStarted;

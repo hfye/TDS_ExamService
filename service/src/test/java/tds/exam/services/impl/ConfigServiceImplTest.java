@@ -61,7 +61,7 @@ public class ConfigServiceImplTest {
                 .build();
 
         when(restTemplate.getForObject(String.format("http://localhost:8080/config/%s/%s", CLIENT_NAME, ASSESSMENT_ID), ClientTestProperty.class)).thenReturn(clientTestProperty);
-        Optional<ClientTestProperty> maybeClientTestProperty = configService.findClientTestPropertyByClientAndAssessment(CLIENT_NAME, ASSESSMENT_ID);
+        Optional<ClientTestProperty> maybeClientTestProperty = configService.findClientTestProperty(CLIENT_NAME, ASSESSMENT_ID);
         verify(restTemplate).getForObject(String.format("http://localhost:8080/config/%s/%s", CLIENT_NAME, ASSESSMENT_ID), ClientTestProperty.class);
 
         assertThat(maybeClientTestProperty.get()).isEqualTo(clientTestProperty);
@@ -70,7 +70,7 @@ public class ConfigServiceImplTest {
     @Test
     public void shouldReturnEmptyWhenClientTestPropertyNotFound() {
         when(restTemplate.getForObject(String.format("http://localhost:8080/config/%s/%s", CLIENT_NAME, ASSESSMENT_ID), ClientTestProperty.class)).thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
-        Optional<ClientTestProperty> maybeSetOfSubject = configService.findClientTestPropertyByClientAndAssessment(CLIENT_NAME, ASSESSMENT_ID);
+        Optional<ClientTestProperty> maybeSetOfSubject = configService.findClientTestProperty(CLIENT_NAME, ASSESSMENT_ID);
         verify(restTemplate).getForObject(String.format("http://localhost:8080/config/%s/%s", CLIENT_NAME, ASSESSMENT_ID), ClientTestProperty.class);
 
         assertThat(maybeSetOfSubject).isNotPresent();
@@ -79,6 +79,6 @@ public class ConfigServiceImplTest {
     @Test (expected = RestClientException.class)
     public void shouldThrowIfStatusNotNotFoundWhenUnexpectedErrorFindingSetOfAdminSubject() {
         when(restTemplate.getForObject(String.format("http://localhost:8080/config/%s/%s", CLIENT_NAME, ASSESSMENT_ID), ClientTestProperty.class)).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
-        configService.findClientTestPropertyByClientAndAssessment(CLIENT_NAME, ASSESSMENT_ID);
+        configService.findClientTestProperty(CLIENT_NAME, ASSESSMENT_ID);
     }
 }

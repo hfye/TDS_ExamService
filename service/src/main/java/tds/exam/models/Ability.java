@@ -7,68 +7,56 @@ import java.util.UUID;
  * Model representing an exam's ability.
  */
 public class Ability {
-    /**
-     * The id of the exam
-     */
     private UUID examId;
-
-    /**
-     * The assessment id
-     */
     private String assessmentId;
-
-    /**
-     * The attempt number of the exam
-     */
     private Integer attempts;
-
-    /**
-     * The date when the exam was scored
-     */
     private Instant dateScored;
+    private Double score;
+
+    public Ability() {
+         // Default constructor used for SQL row mapping
+    }
+
+    public Ability(UUID examId, String assessmentId, Integer attempts, Instant dateScored, Double score) {
+        this.examId = examId;
+        this.assessmentId = assessmentId;
+        this.attempts = attempts;
+        this.dateScored = dateScored;
+        this.score = score;
+    }
 
     /**
-     * The ability score value
+     * @return the id of the exam
      */
-    private Float score;
-
     public UUID getExamId() {
         return examId;
     }
 
-    public void setExamId(UUID examId) {
-        this.examId = examId;
-    }
-
+    /**
+     * @return the id of the assessment
+     */
     public String getAssessmentId() {
         return assessmentId;
     }
 
-    public void setAssessmentId(String assessmentId) {
-        this.assessmentId = assessmentId;
-    }
-
+    /**
+     * @return The attempt number of the exam
+     */
     public Integer getAttempts() {
         return attempts;
     }
 
-    public void setAttempts(Integer attempts) {
-        this.attempts = attempts;
-    }
-
+    /**
+     * @return the date the exam was scored
+     */
     public Instant getDateScored() {
         return dateScored;
     }
-
-    public void setDateScored(Instant dateScored) {
-        this.dateScored = dateScored;
-    }
-
-    public Float getScore() {
+    /**
+     * @return the ability score value
+     */
+    public Double getScore() {
         return score;
     }
 
-    public void setScore(Float score) {
-        this.score = score;
-    }
 }

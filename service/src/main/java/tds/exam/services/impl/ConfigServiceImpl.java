@@ -26,8 +26,11 @@ class ConfigServiceImpl implements ConfigService {
         this.examServiceProperties = examServiceProperties;
     }
 
+    /**
+     * @inheritDoc
+     */
     @Override
-    public Optional<ClientTestProperty> findClientTestPropertyByClientAndAssessment(final String clientName, final String assessmentId) {
+    public Optional<ClientTestProperty> findClientTestProperty(final String clientName, final String assessmentId) {
         UriComponentsBuilder builder =
             UriComponentsBuilder
                 .fromHttpUrl(String.format("%s/%s/%s", examServiceProperties.getConfigUrl(), clientName, assessmentId));

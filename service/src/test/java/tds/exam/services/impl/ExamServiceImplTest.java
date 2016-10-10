@@ -408,7 +408,7 @@ public class ExamServiceImplTest {
         final String assessmentId = "SBAC ELA 3-ELA-3";
         final String clientName = "SBAC_TEST1";
         final long studentId = 9898L;
-        final float assessmentAbilityVal = 99F;
+        final double assessmentAbilityVal = 99D;
 
         ClientTestProperty clientTestProperty = new ClientTestProperty.Builder()
                 .withClientName(clientName)
@@ -432,28 +432,16 @@ public class ExamServiceImplTest {
 
         Exam thisExam = createExam(sessionId, thisExamId, assessmentId, clientName, studentId);
 
-        Ability sameAssessmentAbility = new Ability();
-        sameAssessmentAbility.setExamId(UUID.randomUUID());
-        sameAssessmentAbility.setScore(assessmentAbilityVal);
-        sameAssessmentAbility.setAssessmentId(assessmentId);
-        sameAssessmentAbility.setAttempts(1);
-        sameAssessmentAbility.setDateScored(Instant.now());
-
-        Ability differentAssessmentAbility = new Ability();
-        differentAssessmentAbility.setExamId(UUID.randomUUID());
-        differentAssessmentAbility.setScore(50F);
-        differentAssessmentAbility.setAssessmentId(assessmentId);
-        differentAssessmentAbility.setAttempts(1);
-        differentAssessmentAbility.setDateScored(Instant.now());
+        Ability sameAssessmentAbility = new Ability(
+                UUID.randomUUID(), assessmentId, 1, Instant.now(), assessmentAbilityVal);
+        Ability differentAssessmentAbility = new Ability(
+                UUID.randomUUID(), assessmentId, 1, Instant.now(), 50D);
 
         List<Ability> abilities = new ArrayList<>();
         abilities.add(sameAssessmentAbility);
         abilities.add(differentAssessmentAbility);
-
-        abilities.add(sameAssessmentAbility);
-        abilities.add(differentAssessmentAbility);
         when(repository.findAbilities(thisExamId, clientName, "ELA", studentId)).thenReturn(abilities);
-        Optional<Float> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
+        Optional<Double> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
 
         assertThat(maybeAbilityReturned.get()).isEqualTo(assessmentAbilityVal);
     }
@@ -465,7 +453,6 @@ public class ExamServiceImplTest {
         final String assessmentId = "SBAC ELA 3-ELA-3";
         final String clientName = "SBAC_TEST4";
         final long studentId = 9897L;
-        final float assessmentAbilityVal = 99F;
 
         // Null slop/intercept for this test case
         ClientTestProperty clientTestProperty = new ClientTestProperty.Builder()
@@ -487,28 +474,13 @@ public class ExamServiceImplTest {
                 .build();
 
         Exam thisExam = createExam(sessionId, thisExamId, assessmentId, clientName, studentId);
-
-        Ability sameAssessmentAbility = new Ability();
-        sameAssessmentAbility.setExamId(UUID.randomUUID());
-        sameAssessmentAbility.setScore(assessmentAbilityVal);
-        sameAssessmentAbility.setAssessmentId(assessmentId);
-        sameAssessmentAbility.setAttempts(1);
-        sameAssessmentAbility.setDateScored(Instant.now());
-
-        Ability differentAssessmentAbility = new Ability();
-        differentAssessmentAbility.setExamId(UUID.randomUUID());
-        differentAssessmentAbility.setScore(50F);
-        differentAssessmentAbility.setAssessmentId(assessmentId);
-        differentAssessmentAbility.setAttempts(1);
-        differentAssessmentAbility.setDateScored(Instant.now());
-
         List<Ability> abilities = new ArrayList<>();
-        Optional<Float> abilityOptional = Optional.of(new Float(66));
+        Optional<Double> maybeAbility = Optional.of(66D);
         when(repository.findAbilities(thisExamId, clientName, "ELA", studentId)).thenReturn(abilities);
         when(historyRepository.findAbilityFromHistoryForSubjectAndStudent(clientName, "ELA", studentId))
-                .thenReturn(abilityOptional);
-        Optional<Float> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
-        assertThat(maybeAbilityReturned.get()).isEqualTo(abilityOptional.get());
+                .thenReturn(maybeAbility);
+        Optional<Double> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
+        assertThat(maybeAbilityReturned.get()).isEqualTo(maybeAbility.get());
     }
 
     @Test
@@ -518,17 +490,9 @@ public class ExamServiceImplTest {
         final String assessmentId = "SBAC ELA 3-ELA-3";
         final String clientName = "SBAC_TEST7";
         final long studentId = 9898L;
-        final float assessmentAbilityVal = 99F;
+        final double assessmentAbilityVal = 99F;
         final Double slope = 2D;
         final Double intercept = 1D;
-
-        SetOfAdminSubject setOfAdminSubject = new SetOfAdminSubject(
-                "(SBAC)SBAC ELA 3-ELA-3-Spring-2112a",
-                assessmentId,
-                false,
-                "jeff-j-sort",
-                assessmentAbilityVal
-        );
 
         ClientTestProperty clientTestProperty = new ClientTestProperty.Builder()
                 .withClientName(clientName)
@@ -552,27 +516,13 @@ public class ExamServiceImplTest {
 
         Exam thisExam = createExam(sessionId, thisExamId, assessmentId, clientName, studentId);
 
-        Ability sameAssessmentAbility = new Ability();
-        sameAssessmentAbility.setExamId(UUID.randomUUID());
-        sameAssessmentAbility.setScore(assessmentAbilityVal);
-        sameAssessmentAbility.setAssessmentId(assessmentId);
-        sameAssessmentAbility.setAttempts(1);
-        sameAssessmentAbility.setDateScored(Instant.now());
-
-        Ability differentAssessmentAbility = new Ability();
-        differentAssessmentAbility.setExamId(UUID.randomUUID());
-        differentAssessmentAbility.setScore(50F);
-        differentAssessmentAbility.setAssessmentId(assessmentId);
-        differentAssessmentAbility.setAttempts(1);
-        differentAssessmentAbility.setDateScored(Instant.now());
-
         List<Ability> abilities = new ArrayList<>();
         when(repository.findAbilities(thisExamId, clientName, "ELA", studentId)).thenReturn(abilities);
         when(historyRepository.findAbilityFromHistoryForSubjectAndStudent(clientName, "ELA", studentId))
                 .thenReturn(Optional.empty());
         when(assessmentService.findSetOfAdminSubjectByKey(thisExam.getAssessmentId())).thenReturn(Optional.empty());
-        Optional<Float> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
-        assertThat(maybeAbilityReturned.isPresent()).isFalse();
+        Optional<Double> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
+        assertThat(maybeAbilityReturned).isNotPresent();
     }
 
     @Test
@@ -616,26 +566,12 @@ public class ExamServiceImplTest {
 
         Exam thisExam = createExam(sessionId, thisExamId, assessmentId, clientName, studentId);
 
-        Ability sameAssessmentAbility = new Ability();
-        sameAssessmentAbility.setExamId(UUID.randomUUID());
-        sameAssessmentAbility.setScore(assessmentAbilityVal);
-        sameAssessmentAbility.setAssessmentId(assessmentId);
-        sameAssessmentAbility.setAttempts(1);
-        sameAssessmentAbility.setDateScored(Instant.now());
-
-        Ability differentAssessmentAbility = new Ability();
-        differentAssessmentAbility.setExamId(UUID.randomUUID());
-        differentAssessmentAbility.setScore(50F);
-        differentAssessmentAbility.setAssessmentId(assessmentId);
-        differentAssessmentAbility.setAttempts(1);
-        differentAssessmentAbility.setDateScored(Instant.now());
-
         List<Ability> abilities = new ArrayList<>();
         when(repository.findAbilities(thisExamId, clientName, "ELA", studentId)).thenReturn(abilities);
         when(historyRepository.findAbilityFromHistoryForSubjectAndStudent(clientName, "ELA", studentId))
                 .thenReturn(Optional.empty());
         when(assessmentService.findSetOfAdminSubjectByKey(thisExam.getAssessmentId())).thenReturn(Optional.of(setOfAdminSubject));
-        Optional<Float> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
+        Optional<Double> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
         assertThat(maybeAbilityReturned.get()).isEqualTo(assessmentAbilityVal);
     }
 
@@ -646,7 +582,6 @@ public class ExamServiceImplTest {
         final String assessmentId = "SBAC ELA 3-ELA-3";
         final String clientName = "SBAC_TEST3";
         final long studentId = 9898L;
-        final float assessmentAbilityVal = 99F;
         final Double slope = 2D;
         final Double intercept = 1D;
 
@@ -671,29 +606,14 @@ public class ExamServiceImplTest {
                 .build();
 
         Exam thisExam = createExam(sessionId, thisExamId, assessmentId, clientName, studentId);
-
-        Ability sameAssessmentAbility = new Ability();
-        sameAssessmentAbility.setExamId(UUID.randomUUID());
-        sameAssessmentAbility.setScore(assessmentAbilityVal);
-        sameAssessmentAbility.setAssessmentId(assessmentId);
-        sameAssessmentAbility.setAttempts(1);
-        sameAssessmentAbility.setDateScored(Instant.now());
-
-        Ability differentAssessmentAbility = new Ability();
-        differentAssessmentAbility.setExamId(UUID.randomUUID());
-        differentAssessmentAbility.setScore(50F);
-        differentAssessmentAbility.setAssessmentId(assessmentId);
-        differentAssessmentAbility.setAttempts(1);
-        differentAssessmentAbility.setDateScored(Instant.now());
-
         List<Ability> abilities = new ArrayList<>();
-        Optional<Float> abilityOptional = Optional.of(66F);
+        Optional<Double> maybeAbility = Optional.of(66D);
         when(repository.findAbilities(thisExamId, clientName, "ELA", studentId)).thenReturn(abilities);
         when(historyRepository.findAbilityFromHistoryForSubjectAndStudent(clientName, "ELA", studentId))
-                .thenReturn(abilityOptional);
-        Optional<Float> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
+                .thenReturn(maybeAbility);
+        Optional<Double> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
         // y=mx+b
-        double abilityCalulated = abilityOptional.get() * slope + intercept;
+        double abilityCalulated = maybeAbility.get() * slope + intercept;
         assertThat(maybeAbilityReturned.get()).isEqualTo((float)abilityCalulated);
     }
 
@@ -704,7 +624,7 @@ public class ExamServiceImplTest {
         final String assessmentId = "SBAC ELA 3-ELA-3";
         final String clientName = "SBAC_TEST2";
         final long studentId = 9899L;
-        final float assessmentAbilityVal = 75F;
+        final double assessmentAbilityVal = 75D;
 
         ClientTestProperty clientTestProperty = new ClientTestProperty.Builder()
                 .withClientName(clientName)
@@ -728,25 +648,16 @@ public class ExamServiceImplTest {
 
         Exam thisExam = createExam(sessionId, thisExamId, assessmentId, clientName, studentId);
 
-        Ability sameAssessmentAbility = new Ability();
-        sameAssessmentAbility.setExamId(UUID.randomUUID());
-        sameAssessmentAbility.setScore(assessmentAbilityVal);
-        sameAssessmentAbility.setAssessmentId("assessmentid-2");
-        sameAssessmentAbility.setAttempts(1);
-        sameAssessmentAbility.setDateScored(Instant.now());
-
-        Ability differentAssessmentAbility = new Ability();
-        differentAssessmentAbility.setExamId(UUID.randomUUID());
-        differentAssessmentAbility.setScore(50F);
-        differentAssessmentAbility.setAssessmentId("assessmentid-2");
-        differentAssessmentAbility.setAttempts(1);
-        differentAssessmentAbility.setDateScored(Instant.now());
+        Ability sameAssessmentAbility = new Ability(
+                UUID.randomUUID(), "assessmentid-2", 1, Instant.now(), assessmentAbilityVal);
+        Ability differentAssessmentAbility = new Ability(
+                UUID.randomUUID(), "assessmentid-2", 1, Instant.now(), 50D);
 
         List<Ability> abilities = new ArrayList<>();
         abilities.add(sameAssessmentAbility);
         abilities.add(differentAssessmentAbility);
         when(repository.findAbilities(thisExamId, clientName, "ELA", studentId)).thenReturn(abilities);
-        Optional<Float> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
+        Optional<Double> maybeAbilityReturned = examService.getInitialAbility(thisExam, clientTestProperty);
         assertThat(maybeAbilityReturned.get()).isEqualTo(assessmentAbilityVal);
     }
 

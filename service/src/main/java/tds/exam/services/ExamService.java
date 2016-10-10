@@ -30,5 +30,5 @@ public interface ExamService {
      * @param clientTestProperty  properties object for the exam.
      * @return  the initial ability for an {@link Exam}.
      */
-    Optional<Float> getInitialAbility(Exam exam, ClientTestProperty clientTestProperty);
+    Optional<Double> getInitialAbility(Exam exam, ClientTestProperty clientTestProperty);
 }

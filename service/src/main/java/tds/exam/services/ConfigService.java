@@ -9,5 +9,12 @@ import java.util.Optional;
  */
 public interface ConfigService {
 
-    Optional<ClientTestProperty> findClientTestPropertyByClientAndAssessment(final String clientName, final String assessmentId);
+    /**
+     * Retrieves the {@link ClientTestProperty} for the given client and assessment
+     *
+     * @param clientName    client name of the environment
+     * @param assessmentId  assessment to retrieve {@link ClientTestProperty} for
+     * @return  A set of client and assessment-specific properties.
+     */
+    Optional<ClientTestProperty> findClientTestProperty(final String clientName, final String assessmentId);
 }

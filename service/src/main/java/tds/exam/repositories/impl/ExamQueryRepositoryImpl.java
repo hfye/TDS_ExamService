@@ -127,9 +127,13 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
                 "exam.assessment_id,\n" +
                 "exam.attempts,\n" +
                 "exam.date_scored,\n" +
-                "scores.value AS score\n" +
+                "exam_scores.value AS score\n" +
             "FROM\n" +
-                "exam, scores\n" +
+                "exam \n" +
+            "INNER JOIN \n" +
+                "exam_scores \n" +
+            "ON \n" +
+                "exam.exam_id = exam_scores.fk_scores_examid_exam \n" +
             "WHERE\n" +
                 "exam.client_name = :clientName AND\n" +
                 "exam.student_id = :studentId AND\n" +
@@ -137,10 +141,9 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
                 "exam.date_deleted IS NULL AND\n" +
                 "exam.date_scored IS NOT NULL AND\n" +
                 "exam.exam_id <> :examId AND\n" +
-                "exam.exam_id = scores.fk_scores_examid_exam AND\n" +
-                "scores.use_for_ability = 1 AND\n" +
-                "scores.value IS NOT NULL";
-
+                "exam_scores.use_for_ability = 1 AND\n" +
+                "exam_scores.value IS NOT NULL \n" +
+            "ORDER BY exam.date_scored DESC";
 
         return jdbcTemplate.query(SQL, parameters, new AbilityRowMapper());
     }
@@ -148,12 +151,14 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
     private class AbilityRowMapper implements RowMapper<Ability> {
         @Override
         public Ability mapRow(ResultSet rs, int rowNum) throws SQLException {
-            Ability ability = new Ability();
-            ability.setExamId(UuidAdapter.getUUIDFromBytes(rs.getBytes("exam_id")));
-            ability.setDateScored(ResultSetMapperUtility.mapTimeStampToInstant(rs, "date_scored"));
-            ability.setAttempts((Integer)rs.getObject("attempts"));
-            ability.setAssessmentId(rs.getString("assessment_id"));
-            ability.setScore(rs.getObject("score", Float.class));
+            Ability ability = new Ability(
+                    UuidAdapter.getUUIDFromBytes(rs.getBytes("exam_id")),
+                    rs.getString("assessment_id"),
+                    rs.getInt("attempts"),
+                    ResultSetMapperUtility.mapTimeStampToInstant(rs, "date_scored"),
+                    rs.getDouble("score")
+
+            );
             return ability;
         }
     }

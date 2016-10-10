@@ -14,8 +14,6 @@ import java.util.Optional;
 
 /**
  * Class for retrieving data from the exam history table.
- *
- * Created by emunoz on 10/6/16.
  */
 @Repository
 public class HistoryQueryRepositoryImpl implements HistoryQueryRepository {
@@ -30,7 +28,7 @@ public class HistoryQueryRepositoryImpl implements HistoryQueryRepository {
      * @inheritDoc
      */
     @Override
-    public Optional<Float> findAbilityFromHistoryForSubjectAndStudent(String clientName, String subject, Long studentId) {
+    public Optional<Double> findAbilityFromHistoryForSubjectAndStudent(String clientName, String subject, Long studentId) {
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("clientName", clientName);
         parameters.put("subject", subject);
@@ -38,22 +36,22 @@ public class HistoryQueryRepositoryImpl implements HistoryQueryRepository {
 
         final String SQL =
                 "SELECT\n" +
-                        "MAX(initial_ability)\n" +
-                        "FROM\n" +
-                        "exam.history\n" +
-                        "WHERE\n" +
-                        "client_name = :clientName AND\n" +
-                        "student_id = :studentId AND\n" +
-                        "subject = :subject AND\n" +
-                        "initial_ability IS NOT NULL;";
+                    "MAX(initial_ability) \n" +
+                "FROM \n" +
+                    "history \n" +
+                "WHERE \n" +
+                    "client_name = :clientName AND \n" +
+                    "student_id = :studentId AND \n" +
+                    "subject = :subject AND \n" +
+                    "initial_ability IS NOT NULL;";
 
-        Optional<Float> abilityOptional;
+        Optional<Double> maybeAbility;
         try {
-            abilityOptional = Optional.ofNullable(jdbcTemplate.queryForObject(SQL, parameters, Float.class));
+            maybeAbility = Optional.ofNullable(jdbcTemplate.queryForObject(SQL, parameters, Double.class));
         } catch (EmptyResultDataAccessException e) {
-            abilityOptional = Optional.empty();
+            maybeAbility = Optional.empty();
         }
 
-        return abilityOptional;
+        return maybeAbility;
     }
 }

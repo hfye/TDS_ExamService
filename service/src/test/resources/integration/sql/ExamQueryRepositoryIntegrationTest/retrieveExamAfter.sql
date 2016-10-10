@@ -7,4 +7,4 @@
 USE exam;
 
 DELETE FROM exam;
-DELETE FROM scores;
+DELETE FROM exam_scores;

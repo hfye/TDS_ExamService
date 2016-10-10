@@ -72,19 +72,19 @@ public class HistoryQueryRepositoryImplIntegrationTest {
 
     @Test
     public void shouldRetrieveLargestAbilityValue() {
-        Optional<Float> maxAbility = historyQueryRepository.findAbilityFromHistoryForSubjectAndStudent("CLIENT_TEST", "ELA", STUDENT_ID1);
+        Optional<Double> maxAbility = historyQueryRepository.findAbilityFromHistoryForSubjectAndStudent("CLIENT_TEST", "ELA", STUDENT_ID1);
         assertThat(maxAbility.get()).isEqualTo(MAX_ABILITY_VAL_FOR_STUDENT1);
     }
 
     @Test
     public void shouldReturnNullForNullAbilities() {
-        Optional<Float> maxAbility = historyQueryRepository.findAbilityFromHistoryForSubjectAndStudent("CLIENT_TEST", "ELA", STUDENT_ID2);
-        assertThat(maxAbility.isPresent()).isFalse();
+        Optional<Double> maxAbility = historyQueryRepository.findAbilityFromHistoryForSubjectAndStudent("CLIENT_TEST", "ELA", STUDENT_ID2);
+        assertThat(maxAbility).isNotPresent();
     }
 
     @Test
     public void shouldReturnNullForDifferentSubject() {
-        Optional<Float> maxAbility = historyQueryRepository.findAbilityFromHistoryForSubjectAndStudent("CLIENT_TEST", "MATH", STUDENT_ID1);
-        assertThat(maxAbility.isPresent()).isFalse();
+        Optional<Double> maxAbility = historyQueryRepository.findAbilityFromHistoryForSubjectAndStudent("CLIENT_TEST", "MATH", STUDENT_ID1);
+        assertThat(maxAbility).isNotPresent();
     }
 }
