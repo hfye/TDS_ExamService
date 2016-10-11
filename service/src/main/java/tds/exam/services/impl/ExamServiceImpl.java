@@ -7,17 +7,22 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import tds.assessment.SetOfAdminSubject;
 import tds.common.Response;
 import tds.common.ValidationError;
 import tds.common.data.legacy.LegacyComparer;
+import tds.config.ClientTestProperty;
 import tds.exam.Exam;
 import tds.exam.ExamStatusCode;
 import tds.exam.OpenExamRequest;
 import tds.exam.error.ValidationErrorCode;
+import tds.exam.models.Ability;
 import tds.exam.repositories.ExamQueryRepository;
+import tds.exam.repositories.HistoryQueryRepository;
 import tds.exam.services.AssessmentService;
 import tds.exam.services.ExamService;
 import tds.exam.services.SessionService;
@@ -33,16 +38,19 @@ class ExamServiceImpl implements ExamService {
     private static final Logger LOG = LoggerFactory.getLogger(ExamServiceImpl.class);
 
     private final ExamQueryRepository examQueryRepository;
+    private final HistoryQueryRepository historyQueryRepository;
     private final SessionService sessionService;
     private final StudentService studentService;
     private final AssessmentService assessmentService;
 
     @Autowired
     public ExamServiceImpl(ExamQueryRepository examQueryRepository,
+                           HistoryQueryRepository historyQueryRepository,
                            SessionService sessionService,
                            StudentService studentService,
                            AssessmentService assessmentService) {
         this.examQueryRepository = examQueryRepository;
+        this.historyQueryRepository = historyQueryRepository;
         this.sessionService = sessionService;
         this.studentService = studentService;
         this.assessmentService = assessmentService;
@@ -109,6 +117,54 @@ class ExamServiceImpl implements ExamService {
         return new Response<>(exam);
     }
 
+    /**
+     * @inheritDoc
+     */
+    @Override
+    public Optional<Double> getInitialAbility(Exam exam, ClientTestProperty property) {
+        Optional<Double> ability = Optional.empty();
+        Double slope = property.getAbilitySlope();
+        Double intercept = property.getAbilityIntercept();
+        List<Ability> testAbilities = examQueryRepository.findAbilities(exam.getId(), exam.getClientName(),
+                property.getSubjectName(), exam.getStudentId());
+
+        // Attempt to retrieve the most recent ability for the current subject and assessment
+        Optional<Ability> initialAbility = getMostRecentTestAbilityForSameAssessment(testAbilities, exam.getAssessmentId());
+        if (initialAbility.isPresent()) {
+            ability = Optional.of(initialAbility.get().getScore());
+        } else if (property.getInitialAbilityBySubject()) {
+            // if no ability for a similar assessment was retrieved above, attempt to get the initial ability for another
+            // assessment of the same subject
+            initialAbility = getMostRecentTestAbilityForDifferentAssessment(testAbilities, exam.getAssessmentId());
+            if (initialAbility.isPresent()) {
+                ability = Optional.of(initialAbility.get().getScore());
+            } else {
+                // if no value was returned from the previous call, get the initial ability from the previous year
+                Optional<Double> initialAbilityFromHistory = historyQueryRepository.findAbilityFromHistoryForSubjectAndStudent(
+                        exam.getClientName(), exam.getSubject(), exam.getStudentId());
+
+                if (initialAbilityFromHistory.isPresent() && slope != null && intercept != null) {
+                    ability = Optional.of(initialAbilityFromHistory.get() * slope + intercept);
+                } else if (initialAbilityFromHistory.isPresent()) {
+                    // If no slope/intercept is provided, store base value
+                    ability = initialAbilityFromHistory;
+                }
+            }
+        }
+
+        // If the ability was not retrieved from any of the exam tables, query the assessment service
+        if (!ability.isPresent()) {
+            Optional<SetOfAdminSubject> subjectOptional = assessmentService.findSetOfAdminSubjectByKey(exam.getAssessmentId());
+            if (subjectOptional.isPresent()) {
+                ability = Optional.of((double) subjectOptional.get().getStartAbility());
+            } else {
+                LOG.warn("Could not set the ability for exam ID " + exam.getId());
+            }
+        }
+
+        return ability;
+    }
+
     private Response<Exam> createExam(OpenExamRequest openExamRequest, Student student, Session session, ExternalSessionConfiguration externalSessionConfiguration) {
         //From OpenTestServiceImpl lines 160 -163
         String examStatus;
@@ -122,6 +178,45 @@ class ExamServiceImpl implements ExamService {
 
 
         return null;
+    }
+
+    /**
+     * Gets the most recent {@link Ability} based on the dateScored value for the same assessment.
+     *
+     * @param abilityList the list of {@link Ability}s to iterate through
+     * @param assessmentId  The test key
+     * @return
+     */
+    private Optional<Ability> getMostRecentTestAbilityForSameAssessment(List<Ability> abilityList, String assessmentId) {
+        for (Ability ability : abilityList) {
+            if (assessmentId.equals(ability.getAssessmentId())) {
+                /* NOTE: The query that retrieves the list of abilities is sorted by the "date_scored" of the exam in
+                   descending order. Therefore we can assume the first match is the most recent */
+                return Optional.of(ability);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Gets the most recent {@link Ability} based on the dateScored value for a different assessment.
+     *
+     * @param abilityList the list of {@link Ability}s to iterate through
+     * @param assessmentId  The test key
+     * @return
+     */
+    private Optional<Ability> getMostRecentTestAbilityForDifferentAssessment(List<Ability> abilityList, String assessmentId) {
+        for (Ability ability : abilityList) {
+
+            if (!assessmentId.equals(ability.getAssessmentId())) {
+                /* NOTE: The query that retrieves the list of abilities is sorted by the "date_scored" of the exam in
+                   descending order. Therefore we can assume the first match is the most recent */
+                return Optional.of(ability);
+            }
+        }
+
+        return Optional.empty();
     }
 
     private Optional<ValidationError> canOpenPreviousExam(Exam previousExam, Session currentSession) {

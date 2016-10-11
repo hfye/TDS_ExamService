@@ -28,7 +28,7 @@ class AssessmentServiceImpl implements AssessmentService {
     public Optional<SetOfAdminSubject> findSetOfAdminSubjectByKey(String key) {
         UriComponentsBuilder builder =
             UriComponentsBuilder
-                .fromHttpUrl(examServiceProperties.getAssessmentUrl() + key);
+                .fromHttpUrl(String.format("%s/%s", examServiceProperties.getAssessmentUrl(), key));
 
         Optional<SetOfAdminSubject> maybeSetOfAdminSubject = Optional.empty();
         try {
