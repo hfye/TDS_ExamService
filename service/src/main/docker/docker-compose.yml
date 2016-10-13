@@ -33,12 +33,7 @@ services:
       - "32777:3306"
     volumes_from:
       - exam_mysql_data
-    environment:
-      MYSQL_USER: ${EXAM_DB_USER}
-      MYSQL_PASSWORD: ${EXAM_DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${EXAM_DB_PASSWORD}
-      MYSQL_DATABASE: ${EXAM_DB_NAME}
-  exam_mysql_data:
+    env_file: exam-service.env
     image: mysql
     entrypoint: /bin/bash
   exam:
@@ -47,9 +42,4 @@ services:
       - "32844:8080"
     depends_on:
       - exam_mysql
-    environment:
-      EXAM_DB_HOST: ${EXAM_DB_HOST}
-      EXAM_DB_PORT: ${EXAM_DB_PORT}
-      EXAM_DB_NAME: ${EXAM_DB_NAME}
-      EXAM_DB_USER: ${EXAM_DB_USER}
-      EXAM_DB_PASSWORD: ${EXAM_DB_PASSWORD}
+    env_file: exam-service.env
