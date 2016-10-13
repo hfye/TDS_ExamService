@@ -7,7 +7,7 @@
 # ===========
 # This docker-compose file expects the following:
 #
-#   * The sbacoss/tds-exam-service is already built.  Typically, the sbacoss/tds-exam-service image is built as part
+#   * The fwsbac/tds-exam-service is already built.  Typically, the fwsbac/tds-exam-service image is built as part
 #     of the Maven build process.  The following command is used to build the .jars and the associated Docker image:
 #
 #       mvn clean package docker:build -f /path/to/service/pom.xml
@@ -37,7 +37,7 @@ services:
     image: mysql
     entrypoint: /bin/bash
   exam:
-    image: sbacoss/tds-exam-service
+    image: fwsbac/tds-exam-service
     ports:
       - "32844:8080"
     depends_on:
