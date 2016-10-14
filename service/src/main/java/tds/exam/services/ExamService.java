@@ -6,6 +6,8 @@ import java.util.UUID;
 import tds.common.Response;
 import tds.config.ClientTestProperty;
 import tds.exam.Exam;
+import tds.exam.ExamApproval;
+import tds.exam.ExamApprovalRequest;
 import tds.exam.OpenExamRequest;
 
 /**
@@ -22,6 +24,18 @@ public interface ExamService {
     Optional<Exam> getExam(UUID uuid);
 
     Response<Exam> openExam(OpenExamRequest openExamRequest);
+
+    /**
+     * Get approval for the open exam request.
+     * <p>
+     *     This method is called in a loop by the Student application while waiting for the Proctor to approve or deny
+     *     the Student's request to start his/her exam.
+     * </p>
+     *
+     * @param examApprovalRequest The {@link ExamApprovalRequest} representing the request to open the specified exam.
+     * @return {@link ExamApproval} describing whether the exam is approved to be opened.
+     */
+    Response<ExamApproval> getApproval(ExamApprovalRequest examApprovalRequest);
 
     /**
      * Retrieves the initial ability value for an {@link Exam}.

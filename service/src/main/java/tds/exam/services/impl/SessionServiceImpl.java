@@ -15,6 +15,7 @@ import java.util.UUID;
 import tds.exam.configuration.ExamServiceProperties;
 import tds.exam.services.SessionService;
 import tds.session.ExternalSessionConfiguration;
+import tds.session.PauseSessionResponse;
 import tds.session.Session;
 
 @Service
@@ -66,5 +67,24 @@ class SessionServiceImpl implements SessionService {
         }
 
         return maybeExternalSessionConfig;
+    }
+
+    @Override
+    public Optional<PauseSessionResponse> pause(final UUID sessionId, final String newStatus) {
+        UriComponentsBuilder builder =
+                UriComponentsBuilder.fromHttpUrl(String.format("%s/%s/pause", examServiceProperties.getSessionUrl(), sessionId));
+
+        Optional<PauseSessionResponse> maybePauseSessionResponse = Optional.empty();
+
+        try {
+            final PauseSessionResponse pauseSessionResponse = restTemplate.getForObject(builder.toUriString(), PauseSessionResponse.class);
+            maybePauseSessionResponse = Optional.of(pauseSessionResponse);
+        } catch (HttpClientErrorException hce) {
+            if(hce.getStatusCode() != HttpStatus.NOT_FOUND) {
+                throw hce;
+            }
+        }
+
+        return maybePauseSessionResponse;
     }
 }

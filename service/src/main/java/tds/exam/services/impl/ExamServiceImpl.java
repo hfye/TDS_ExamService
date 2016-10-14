@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,10 +16,13 @@ import tds.assessment.SetOfAdminSubject;
 import tds.common.Response;
 import tds.common.ValidationError;
 import tds.common.data.legacy.LegacyComparer;
+import tds.config.TimeLimitConfiguration;
 import tds.config.ClientTestProperty;
 import tds.exam.Exam;
-import tds.exam.ExamStatusCode;
 import tds.exam.OpenExamRequest;
+import tds.exam.ExamApproval;
+import tds.exam.ExamApprovalRequest;
+import tds.exam.ExamStatusCode;
 import tds.exam.error.ValidationErrorCode;
 import tds.exam.models.Ability;
 import tds.exam.repositories.ExamQueryRepository;
@@ -27,6 +31,7 @@ import tds.exam.services.AssessmentService;
 import tds.exam.services.ExamService;
 import tds.exam.services.SessionService;
 import tds.exam.services.StudentService;
+import tds.exam.services.TimeLimitConfigurationService;
 import tds.session.ExternalSessionConfiguration;
 import tds.session.Session;
 import tds.student.Student;
@@ -42,18 +47,21 @@ class ExamServiceImpl implements ExamService {
     private final SessionService sessionService;
     private final StudentService studentService;
     private final AssessmentService assessmentService;
+    private final TimeLimitConfigurationService timeLimitConfigurationService;
 
     @Autowired
     public ExamServiceImpl(ExamQueryRepository examQueryRepository,
                            HistoryQueryRepository historyQueryRepository,
                            SessionService sessionService,
                            StudentService studentService,
-                           AssessmentService assessmentService) {
+                           AssessmentService assessmentService,
+                           TimeLimitConfigurationService timeLimitConfigurationService) {
         this.examQueryRepository = examQueryRepository;
         this.historyQueryRepository = historyQueryRepository;
         this.sessionService = sessionService;
         this.studentService = studentService;
         this.assessmentService = assessmentService;
+        this.timeLimitConfigurationService = timeLimitConfigurationService;
     }
 
     @Override
@@ -65,13 +73,13 @@ class ExamServiceImpl implements ExamService {
     public Response<Exam> openExam(OpenExamRequest openExamRequest) {
         Optional<Session> maybeSession = sessionService.findSessionById(openExamRequest.getSessionId());
         if (!maybeSession.isPresent()) {
-            throw new IllegalArgumentException(String.format("Could not find session for %s", openExamRequest.getSessionId()));
+            throw new IllegalArgumentException(String.format("Could not find session for id %s", openExamRequest.getSessionId()));
         }
 
         if (!openExamRequest.isGuestStudent()) {
             Optional<Student> maybeStudent = studentService.getStudentById(openExamRequest.getStudentId());
             if (!maybeStudent.isPresent()) {
-                throw new IllegalArgumentException(String.format("Could not find student for %s", openExamRequest.getStudentId()));
+                throw new IllegalArgumentException(String.format("Could not find student for id %s", openExamRequest.getStudentId()));
             }
         }
 
@@ -115,6 +123,18 @@ class ExamServiceImpl implements ExamService {
         }
 
         return new Response<>(exam);
+    }
+
+    @Override
+    public Response<ExamApproval> getApproval(ExamApprovalRequest examApprovalRequest) {
+        Exam exam = examQueryRepository.getExamById(examApprovalRequest.getExamId())
+                .orElseThrow(() -> new IllegalArgumentException("Exam could not be found for id " + examApprovalRequest.getExamId()));
+
+        Optional<ValidationError> maybeValidationError = verifyExamApprovalRules(examApprovalRequest, exam);
+
+        return maybeValidationError.isPresent()
+                ? new Response<ExamApproval>(maybeValidationError.get())
+                : new Response<>(new ExamApproval(examApprovalRequest.getExamId(), exam.getStatus(), exam.getStatusChangeReason()));
     }
 
     /**
@@ -290,6 +310,73 @@ class ExamServiceImpl implements ExamService {
                     return Optional.of(new ValidationError(ValidationErrorCode.NOT_ENOUGH_DAYS_PASSED, String.format("Next exam cannot be started until %s days pass since last exam", openExamRequest.getNumberOfDaysToDelay())));
                 }
             }
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Verify all the rules for approving a request to start an {@link Exam} are satisfied.
+     * <p>
+     *     The rules are:
+     *     <ul>
+     *         <li>The browser key of the approval request must match the browser key of the {@link Exam}.</li>
+     *         <li>The session id of the approval request must match the session id of the {@link Exam}.</li>
+     *         <li>The {@link Session} must be open (unless the environment is set to "simulation" or "development")</li>
+     *         <li>The TA Check-In time window cannot be passed</li>
+     *     </ul>
+     *     <strong>NOTE:</strong>  If the {@link Session} has no Proctor (because the {@link Session} is a guest session
+     *     or is otherwise proctor-less), approval is granted as long as the {@link Session} is open.
+     * </p>
+     *
+     * @param examApprovalRequest The {@link ExamApprovalRequest} being evaluated
+*      @param exam The {@link Exam} for which approval is being requested
+     * @return An empty optional if the approval rules are satisfied; otherwise an optional containing a
+     * {@link ValidationError} describing the rule that was not satisfied
+     */
+    private Optional<ValidationError> verifyExamApprovalRules(ExamApprovalRequest examApprovalRequest, Exam exam) {
+        final String SIMULATION_ENVIRONMENT = "simulation";
+        final String DEVELOPMENT_ENVIRONMENT = "development";
+
+        // RULE:  The browser key for the approval request must match the browser key of the exam.
+        if (!exam.getBrowserId().equals(examApprovalRequest.getBrowserId())) {
+            return Optional.of(new ValidationError(ValidationErrorCode.EXAM_APPROVAL_BROWSER_ID_MISMATCH, "Access violation: System access denied"));
+        }
+
+        // RULE:  Session id for the approval request must match the session id of the exam.
+        if (!exam.getSessionId().equals(examApprovalRequest.getSessionId())) {
+            return Optional.of(new ValidationError(ValidationErrorCode.EXAM_APPROVAL_SESSION_ID_MISMATCH, "The session keys do not match; please consult your test administrator"));
+        }
+
+        Session session = sessionService.findSessionById(examApprovalRequest.getSessionId())
+                .orElseThrow(() -> new IllegalArgumentException("Could not find session for id " + examApprovalRequest.getSessionId()));
+
+        ExternalSessionConfiguration externalSessionConfig =
+                sessionService.findExternalSessionConfigurationByClientName(examApprovalRequest.getClientName())
+                        .orElseThrow(() -> new IllegalStateException(String.format("External Session Configuration could not be found for client name %s", examApprovalRequest.getClientName())));
+
+        // RULE:  Unless the environment is set to "simulation" or "development", the exam's session must be open.
+        boolean checkSession = (!externalSessionConfig.getEnvironment().toLowerCase().equals(SIMULATION_ENVIRONMENT)
+                        && !externalSessionConfig.getEnvironment().toLowerCase().equals(DEVELOPMENT_ENVIRONMENT));
+        if (checkSession && !session.isOpen()) {
+            return Optional.of(new ValidationError(ValidationErrorCode.EXAM_APPROVAL_SESSION_CLOSED, "The session is not available for testing, please check with your test administrator."));
+        }
+
+        // RULE:  If the session has no proctor, there is nothing to approve.  This is either a guest session or an
+        // otherwise proctor-less session.
+        if (session.getProctorId() == null) {
+            return Optional.empty();
+        }
+
+        // RULE:  Student should not be able to start an exam if the TA check-in window has expired.
+        TimeLimitConfiguration timeLimitConfig =
+                timeLimitConfigurationService.findTimeLimitConfiguration(examApprovalRequest.getClientName(), exam.getAssessmentId())
+                .orElseThrow(() -> new IllegalArgumentException(String.format("Could not find time limit configuration for client name %s and assessment id %s", examApprovalRequest.getClientName(), exam.getAssessmentId())));
+
+        if (Instant.now().isAfter(session.getDateVisited().plus(timeLimitConfig.getTaCheckinTimeMinutes(), ChronoUnit.MINUTES))) {
+            // TODO: Create session audit record
+            sessionService.pause(session.getId(), "closed");
+            return Optional.of(new ValidationError(ValidationErrorCode.EXAM_APPROVAL_TA_CHECKIN_TIMEOUT, "The session is not available for testing, please check with your test administrator."));
         }
 
         return Optional.empty();
