@@ -19,6 +19,10 @@ java \
     -Dexam-service.student-url=http://student/ \
     -Dexam-service.assessment-url=http://assessment/ \
     -Dexam-service.config-url=http://config/ \
+    -Dflyway.enabled=true \
+    -Dflyway.url="jdbc:mysql://exam_mysql/${EXAM_DB_NAME}" \
+    -Dflyway.user="${EXAM_DB_USER}" \
+    -Dflyway.password="${EXAM_DB_PASSWORD}" \
     -jar /tds-exam-service.jar \
     --server-port="8080" \
     --server.undertow.buffer-size=16384 \
