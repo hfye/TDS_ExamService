@@ -174,9 +174,9 @@ class ExamServiceImpl implements ExamService {
 
         // If the ability was not retrieved from any of the exam tables, query the assessment service
         if (!ability.isPresent()) {
-            Optional<Assessment> assessmentOptional = assessmentService.findAssessmentByKey(exam.getAssessmentId());
-            if (assessmentOptional.isPresent()) {
-                ability = Optional.of((double) assessmentOptional.get().getStartAbility());
+            Optional<Assessment> maybeAssessment = assessmentService.findAssessmentByKey(exam.getAssessmentId());
+            if (maybeAssessment.isPresent()) {
+                ability = Optional.of((double) maybeAssessment.get().getStartAbility());
             } else {
                 LOG.warn("Could not set the ability for exam ID " + exam.getId());
             }
