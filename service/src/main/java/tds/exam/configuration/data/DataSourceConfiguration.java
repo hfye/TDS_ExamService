@@ -1,4 +1,4 @@
-package tds.exam.configuration.datasources;
+package tds.exam.configuration.data;
 
 import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
 import org.springframework.boot.context.properties.ConfigurationProperties;

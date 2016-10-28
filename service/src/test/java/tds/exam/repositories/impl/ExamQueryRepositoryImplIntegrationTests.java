@@ -34,18 +34,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @Transactional
 public class ExamQueryRepositoryImplIntegrationTests {
-    @Autowired
-    @Qualifier("commandDataSource")
-    private DataSource commandDataSource;
-
     private ExamQueryRepository examQueryRepository;
+
+    @Autowired
+    @Qualifier("commandJdbcTemplate")
     private NamedParameterJdbcTemplate jdbcTemplate;
 
     @Before
     public void setUp() {
-        examQueryRepository = new ExamQueryRepositoryImpl(commandDataSource);
-        jdbcTemplate = new NamedParameterJdbcTemplate(commandDataSource);
-
+        examQueryRepository = new ExamQueryRepositoryImpl(jdbcTemplate);
         List<Exam> exams = new ArrayList<>();
         // Build a basic exam record
         exams.add(new ExamBuilder().build());
