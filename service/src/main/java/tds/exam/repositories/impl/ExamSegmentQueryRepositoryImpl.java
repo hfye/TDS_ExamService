@@ -3,16 +3,22 @@ package tds.exam.repositories.impl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import tds.common.data.mapping.ResultSetMapperUtility;
 import tds.common.data.mysql.UuidAdapter;
 import tds.exam.models.ExamSegment;
 import tds.exam.repositories.ExamSegmentQueryRepository;
 
-import javax.sql.DataSource;
-import java.util.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Repository implementation for reading from the {@link ExamSegment} related tables.
@@ -43,7 +49,7 @@ public class ExamSegmentQueryRepositoryImpl implements ExamSegmentQueryRepositor
                 "   s.field_test_item_count, \n" +
                 "   s.field_test_items, \n" +
                 "   se.permeable, \n" +
-                "   se.restore_permeable_on, \n" +
+                "   se.restore_permeable_condition, \n" +
                 "   s.form_cohort, \n" +
                 "   se.satisfied, \n" +
                 "   se.date_exited, \n" +
@@ -59,6 +65,7 @@ public class ExamSegmentQueryRepositoryImpl implements ExamSegmentQueryRepositor
                 "       MAX(created_at) AS created_at \n" +
                 "   FROM \n" +
                 "       exam_segment_event \n" +
+                "   WHERE fk_segment_examid_exam = :examId \n" +
                 "   GROUP BY \n" +
                 "       exam_id, segment_position \n" +
                 ") last_event \n" +
@@ -72,28 +79,7 @@ public class ExamSegmentQueryRepositoryImpl implements ExamSegmentQueryRepositor
                 "ORDER BY \n" +
                 "   segment_position \n";
 
-        return jdbcTemplate.query(SQL, parameters, (rs, rowNumber) ->
-                new ExamSegment.Builder()
-                        .withExamId(UuidAdapter.getUUIDFromBytes(rs.getBytes("exam_id")))
-                        .withAssessmentSegmentId(rs.getString("assessment_segment_id"))
-                        .withAssessmentSegmentKey(rs.getString("assessment_segment_key"))
-                        .withSegmentPosition(rs.getInt("segment_position"))
-                        .withFormKey(rs.getString("form_key"))
-                        .withFormId(rs.getString("form_id"))
-                        .withAlgorithm(rs.getString("algorithm"))
-                        .withExamItemCount(rs.getInt("exam_item_count"))
-                        .withFieldTestItemCount(rs.getInt("field_test_item_count"))
-                        .withFieldTestItems(createItemListFromString(rs.getString("field_test_items")))
-                        .withIsPermeable(rs.getBoolean("permeable"))
-                        .withRestorePermeableOn(rs.getString("restore_permeable_on"))
-                        .withFormCohort(rs.getString("form_cohort"))
-                        .withIsSatisfied(rs.getBoolean("satisfied"))
-                        .withDateExited(ResultSetMapperUtility.mapTimeStampToInstant(rs, "date_exited"))
-                        .withItemPool(createItemListFromString(rs.getString("item_pool")))
-                        .withPoolCount(rs.getInt("pool_count"))
-                        .withCreatedAt(ResultSetMapperUtility.mapTimeStampToInstant(rs, "created_at"))
-                        .build()
-        );
+        return jdbcTemplate.query(SQL, parameters, new ExamSegmentRowMapper());
     }
 
     @Override
@@ -115,7 +101,7 @@ public class ExamSegmentQueryRepositoryImpl implements ExamSegmentQueryRepositor
                 "   s.field_test_item_count, \n" +
                 "   s.field_test_items, \n" +
                 "   se.permeable, \n" +
-                "   se.restore_permeable_on, \n" +
+                "   se.restore_permeable_condition, \n" +
                 "   s.form_cohort, \n" +
                 "   se.satisfied, \n" +
                 "   se.date_exited, \n" +
@@ -138,8 +124,23 @@ public class ExamSegmentQueryRepositoryImpl implements ExamSegmentQueryRepositor
         Optional<ExamSegment> maybeExamSegment;
 
         try {
-            maybeExamSegment = Optional.of(jdbcTemplate.queryForObject(SQL, parameters, (rs, rowNumber) ->
-                new ExamSegment.Builder()
+            maybeExamSegment = Optional.of(jdbcTemplate.queryForObject(SQL, parameters, new ExamSegmentRowMapper()));
+        } catch (EmptyResultDataAccessException e) {
+            maybeExamSegment = Optional.empty();
+        }
+
+        return maybeExamSegment;
+    }
+
+    private List<String> createItemListFromString(String itemListStr) {
+        // Check if the value is an empty string - otherwise, the split returns an empty string (non-empty list)
+        return itemListStr.equals("") ? new ArrayList<>() : Arrays.asList(itemListStr.split(","));
+    }
+
+    private class ExamSegmentRowMapper implements RowMapper<ExamSegment> {
+        @Override
+        public ExamSegment mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return new ExamSegment.Builder()
                     .withExamId(UuidAdapter.getUUIDFromBytes(rs.getBytes("exam_id")))
                     .withAssessmentSegmentId(rs.getString("assessment_segment_id"))
                     .withAssessmentSegmentKey(rs.getString("assessment_segment_key"))
@@ -151,24 +152,14 @@ public class ExamSegmentQueryRepositoryImpl implements ExamSegmentQueryRepositor
                     .withFieldTestItemCount(rs.getInt("field_test_item_count"))
                     .withFieldTestItems(createItemListFromString(rs.getString("field_test_items")))
                     .withIsPermeable(rs.getBoolean("permeable"))
-                    .withRestorePermeableOn(rs.getString("restore_permeable_on"))
+                    .withRestorePermeableCondition(rs.getString("restore_permeable_condition"))
                     .withFormCohort(rs.getString("form_cohort"))
                     .withIsSatisfied(rs.getBoolean("satisfied"))
                     .withDateExited(ResultSetMapperUtility.mapTimeStampToInstant(rs, "date_exited"))
                     .withItemPool(createItemListFromString(rs.getString("item_pool")))
                     .withPoolCount(rs.getInt("pool_count"))
                     .withCreatedAt(ResultSetMapperUtility.mapTimeStampToInstant(rs, "created_at"))
-                    .build()
-            ));
-        } catch (EmptyResultDataAccessException e) {
-            maybeExamSegment = Optional.empty();
+                    .build();
         }
-
-        return maybeExamSegment;
-    }
-
-    private List<String> createItemListFromString(String itemListStr) {
-        // Check if the value is an empty string - otherwise, the split returns an empty string (non-empty list)
-        return itemListStr.equals("") ? new ArrayList<>() : Arrays.asList(itemListStr.split(","));
     }
 }

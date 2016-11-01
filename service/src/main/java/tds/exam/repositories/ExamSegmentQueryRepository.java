@@ -15,7 +15,7 @@ public interface ExamSegmentQueryRepository {
      * Retrieves a list of {@link ExamSegment}s for this particular segment.
      *
      * @param examId    the exam to retrieve segments for
-     * @return
+     * @return the list of {@link ExamSegment}s
      */
     List<ExamSegment> findByExamId(UUID examId);
 
@@ -24,7 +24,7 @@ public interface ExamSegmentQueryRepository {
      *
      * @param examId the exam to retrieve the segment for
      * @param segmentPosition   the position of the segment in the exam
-     * @return
+     * @return the {@link ExamSegment}
      */
     Optional<ExamSegment> findByExamIdAndSegmentPosition(UUID examId, int segmentPosition);
 

@@ -22,7 +22,7 @@ public class ExamSegment {
     private int fieldTestItemCount;
     private List<String> fieldTestItems;
     private boolean isPermeable;
-    private String restorePermeableOn;
+    private String restorePermeableCondition;
     private String formCohort;
     private boolean isSatisfied;
     private Instant dateExited;
@@ -42,7 +42,7 @@ public class ExamSegment {
         this.fieldTestItemCount = builder.fieldTestItemCount;
         this.fieldTestItems = builder.fieldTestItems;
         this.isPermeable = builder.isPermeable;
-        this.restorePermeableOn = builder.restorePermeableOn;
+        this.restorePermeableCondition = builder.restorePermeableCondition;
         this.formCohort = builder.formCohort;
         this.isSatisfied = builder.isSatisfied;
         this.dateExited = builder.dateExited;
@@ -63,7 +63,7 @@ public class ExamSegment {
         private int fieldTestItemCount;
         private List<String> fieldTestItems;
         private boolean isPermeable;
-        private String restorePermeableOn;
+        private String restorePermeableCondition;
         private String formCohort;
         private boolean isSatisfied;
         private Instant dateExited;
@@ -126,8 +126,8 @@ public class ExamSegment {
             return this;
         }
 
-        public Builder withRestorePermeableOn(String newRestorePermeableOn) {
-            this.restorePermeableOn = newRestorePermeableOn;
+        public Builder withRestorePermeableCondition(String restorePermeableCondition) {
+            this.restorePermeableCondition = restorePermeableCondition;
             return this;
         }
 
@@ -166,75 +166,128 @@ public class ExamSegment {
         }
     }
 
-
+    /**
+     * @return The position of the segment in the {@link tds.assessment.Assessment}
+     */
     public int getSegmentPosition() {
         return segmentPosition;
     }
 
+    /**
+     * @return The id to the {@link Exam} associated with this exam segment.
+     */
     public UUID getExamId() {
         return examId;
     }
 
+    /**
+     * @return the key of the assessment segment
+     */
     public String getAssessmentSegmentKey() {
         return assessmentSegmentKey;
     }
 
+    /**
+     * @return the id of the assessment segment
+     */
     public String getAssessmentSegmentId() {
         return assessmentSegmentId;
     }
 
+    /**
+     * @return the key of the form this segment belongs to (fixed form only)
+     */
     public String getFormKey() {
         return formKey;
     }
 
+    /**
+     * @return the id of the form this segment belongs to (fixed form only)
+     */
     public String getFormId() {
         return formId;
     }
 
+    /**
+     * @return the algorithm used by the segment for item selection
+     */
     public String getAlgorithm() {
         return algorithm;
     }
 
+    /**
+     * @return  the number of total items for this exam.
+     */
     public int getExamItemCount() {
         return examItemCount;
     }
 
+    /**
+     * @return the number of total field test items for this exam
+     */
     public int getFieldTestItemCount() {
         return fieldTestItemCount;
     }
 
+    /**
+     * @return the list of field test item ids, comma delimited.
+     */
     public List<String> getFieldTestItems() {
         return fieldTestItems;
     }
 
+    /**
+     * @return states whether a segment can be permeated (viewed by a student)
+     */
     public boolean isPermeable() {
         return isPermeable;
     }
 
-    public String getRestorePermeableOn() {
-        return restorePermeableOn;
+    /**
+     * @return the condition for which permeability is restored for
+     */
+    public String getRestorePermeableCondition() {
+        return restorePermeableCondition;
     }
 
+    /**
+     * @return the form cohort (fixed form only)
+     */
     public String getFormCohort() {
         return formCohort;
     }
 
+    /**
+     * @return states whether an exam segment has been "satisfied" (completed) by the student
+     */
     public boolean isSatisfied() {
         return isSatisfied;
     }
 
+    /**
+     * @return the {@link Instant} the segment was exited
+     */
     public Instant getDateExited() {
         return dateExited;
     }
 
+    /**
+     * @return the list of item ids in the item pool, comma delimited
+     */
     public List<String> getItemPool() {
         return itemPool;
     }
 
+    /**
+     * @return the total number of items in the item pool
+     */
     public int getPoolCount() {
         return poolCount;
     }
 
+    /**
+     * @return the {@link Instant} for when the {@link ExamSegment} was created
+     */
     public Instant getCreatedAt() {
         return createdAt;
     }

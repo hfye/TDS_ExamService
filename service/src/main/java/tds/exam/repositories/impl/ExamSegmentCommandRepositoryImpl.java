@@ -6,11 +6,10 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Repository;
+import tds.common.data.mapping.ResultSetMapperUtility;
 import tds.common.data.mysql.UuidAdapter;
 import tds.exam.models.ExamSegment;
 import tds.exam.repositories.ExamSegmentCommandRepository;
-
-import java.sql.Timestamp;
 
 /**
  * Repository responsible for writing to the exam_segment and exam_segment_event table.
@@ -21,12 +20,15 @@ public class ExamSegmentCommandRepositoryImpl implements ExamSegmentCommandRepos
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @Autowired
-    public ExamSegmentCommandRepositoryImpl(@Qualifier("commandJdbcTemplate") NamedParameterJdbcTemplate commandJdbcTemplate) {
+    public ExamSegmentCommandRepositoryImpl(final @Qualifier("commandJdbcTemplate") NamedParameterJdbcTemplate commandJdbcTemplate) {
         this.jdbcTemplate = commandJdbcTemplate;
     }
 
+    /**
+     * @inheritDoc
+     */
     @Override
-    public void insert(ExamSegment segment) {
+    public void insert(final ExamSegment segment) {
         final SqlParameterSource parameters =
                 new MapSqlParameterSource("examId", UuidAdapter.getBytesFromUUID(segment.getExamId()))
                         .addValue("assessmentSegmentKey", segment.getAssessmentSegmentKey())
@@ -42,8 +44,8 @@ public class ExamSegmentCommandRepositoryImpl implements ExamSegmentCommandRepos
                         .addValue("poolCount", segment.getPoolCount())
                         .addValue("isSatisfied", segment.isSatisfied())
                         .addValue("isPermeable", segment.isPermeable())
-                        .addValue("restorePermeableOn", segment.getRestorePermeableOn())
-                        .addValue("dateExited", segment.getDateExited() == null ? null : Timestamp.from(segment.getDateExited()))
+                        .addValue("restorePermeableOn", segment.getRestorePermeableCondition())
+                        .addValue("dateExited", ResultSetMapperUtility.mapInstantToTimestamp(segment.getDateExited()))
                         .addValue("itemPool", String.join(",", segment.getItemPool()));
 
         final String segmentQuery =
@@ -80,15 +82,18 @@ public class ExamSegmentCommandRepositoryImpl implements ExamSegmentCommandRepos
         update(segment);
     }
 
+    /**
+     * @inheritDoc
+     */
     @Override
-    public void update(ExamSegment segment) {
+    public void update(final ExamSegment segment) {
         final SqlParameterSource parameters =
                 new MapSqlParameterSource("examId", UuidAdapter.getBytesFromUUID(segment.getExamId()))
                         .addValue("segmentPosition", segment.getSegmentPosition())
                         .addValue("isSatisfied", segment.isSatisfied())
                         .addValue("isPermeable", segment.isPermeable())
-                        .addValue("restorePermeableOn", segment.getRestorePermeableOn())
-                        .addValue("dateExited", segment.getDateExited() == null ? null : Timestamp.from(segment.getDateExited()))
+                        .addValue("restorePermeableCondition", segment.getRestorePermeableCondition())
+                        .addValue("dateExited", ResultSetMapperUtility.mapInstantToTimestamp(segment.getDateExited()))
                         .addValue("itemPool", String.join(",", segment.getItemPool()));
 
         final String segmentEventQuery =
@@ -97,7 +102,7 @@ public class ExamSegmentCommandRepositoryImpl implements ExamSegmentCommandRepos
                 "   segment_position, \n" +
                 "   satisfied, \n" +
                 "   permeable, \n" +
-                "   restore_permeable_on, \n" +
+                "   restore_permeable_condition, \n" +
                 "   date_exited, \n" +
                 "   item_pool \n" +
                 ") \n" +
@@ -106,7 +111,7 @@ public class ExamSegmentCommandRepositoryImpl implements ExamSegmentCommandRepos
                 "   :segmentPosition, \n" +
                 "   :isSatisfied, \n" +
                 "   :isPermeable, \n" +
-                "   :restorePermeableOn, \n" +
+                "   :restorePermeableCondition, \n" +
                 "   :dateExited, \n" +
                 "   :itemPool \n" +
                 ")";

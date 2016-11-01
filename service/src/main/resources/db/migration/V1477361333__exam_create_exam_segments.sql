@@ -23,7 +23,6 @@ CREATE TABLE exam_segment (
   created_at TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP(3) NOT NULL,
   PRIMARY KEY (fk_segment_examid_exam, segment_position),
   KEY ix_segment_form_key (assessment_segment_key,form_key),
-  --   CONSTRAINT `fk_exam_id_segment` FOREIGN KEY (`fk_segment_examid_exam`) REFERENCES exam (exam_id) ON DELETE CASCADE ON UPDATE NO ACTION
   INDEX ix_created_at (created_at)
 );
 
@@ -33,7 +32,7 @@ CREATE TABLE exam_segment_event (
   segment_position INT(11) NOT NULL,
   satisfied BIT(1) NOT NULL DEFAULT b'0',
   permeable BIT(1) NOT NULL DEFAULT b'0',
-  restore_permeable_on VARCHAR(50) DEFAULT NULL,
+  restore_permeable_condition VARCHAR(50) DEFAULT NULL,
   date_exited DATETIME(3) DEFAULT NULL,
   item_pool TEXT,
   created_at TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP(3) NOT NULL,

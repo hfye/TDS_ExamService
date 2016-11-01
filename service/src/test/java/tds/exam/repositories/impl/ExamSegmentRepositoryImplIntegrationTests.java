@@ -11,6 +11,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 import tds.exam.models.ExamSegment;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,11 +21,11 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Created by emunoz on 10/28/16.
+ * Integration tests for the {@link ExamSegmentQueryRepositoryImpl and {@link ExamSegmentCommandRepositoryImpl}}
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest
-//@Transactional
+@Transactional
 public class ExamSegmentRepositoryImplIntegrationTests {
 
     private ExamSegmentCommandRepositoryImpl commandRepository;
@@ -49,7 +50,7 @@ public class ExamSegmentRepositoryImplIntegrationTests {
         final String segmentKey2 = "Segment-key-2";
         final int segmentPos2 = 2;
         final String algorithm = "fixedform";
-        final Instant dateExited = Instant.now();
+        final Instant dateExited = Instant.now(Clock.systemUTC());
         final UUID examId = UUID.randomUUID();
         final int examItemCount = 3;
         final int ftItemCount = 0;
@@ -60,7 +61,7 @@ public class ExamSegmentRepositoryImplIntegrationTests {
         final String item = "item1";
         List<String> itemPool = new ArrayList<>();
         itemPool.add(item);
-        final String reason = "on pause";
+        final String condition = "on pause";
         final String formId = "form-id-1";
         final String formKey = "form-key-1";
 
@@ -79,7 +80,7 @@ public class ExamSegmentRepositoryImplIntegrationTests {
                 .withIsSatisfied(satisfied)
                 .withPoolCount(poolCount)
                 .withItemPool(itemPool)
-                .withRestorePermeableOn(reason)
+                .withRestorePermeableCondition(condition)
                 .withFormKey(formKey)
                 .withFormId(formId)
                 .build();
@@ -101,7 +102,7 @@ public class ExamSegmentRepositoryImplIntegrationTests {
                 .withItemPool(itemPool)
                 .withFormKey(formKey)
                 .withFormId(formId)
-                .withRestorePermeableOn(reason)
+                .withRestorePermeableCondition(condition)
                 .build();
 
         commandRepository.insert(segment1);
@@ -114,7 +115,7 @@ public class ExamSegmentRepositoryImplIntegrationTests {
         assertThat(maybeRetrievedSegment.get().getSegmentPosition()).isEqualTo(segmentPos2);
         assertThat(maybeRetrievedSegment.get().getAlgorithm()).isEqualTo(algorithm);
         assertThat(maybeRetrievedSegment.get().getCreatedAt()).isNotNull();
-//        assertThat(maybeRetrievedSegment.get().getDateExited()).isEqualTo(dateExited);
+        assertThat(maybeRetrievedSegment.get().getDateExited()).isEqualTo(dateExited);
         assertThat(maybeRetrievedSegment.get().getExamId()).isEqualTo(examId);
         assertThat(maybeRetrievedSegment.get().getExamItemCount()).isEqualTo(examItemCount);
         assertThat(maybeRetrievedSegment.get().getItemPool()).contains(item);
@@ -122,7 +123,7 @@ public class ExamSegmentRepositoryImplIntegrationTests {
         assertThat(maybeRetrievedSegment.get().getFormId()).isEqualTo(formId);
         assertThat(maybeRetrievedSegment.get().getFormKey()).isEqualTo(formKey);
         assertThat(maybeRetrievedSegment.get().getFormCohort()).isEqualTo(cohort);
-        assertThat(maybeRetrievedSegment.get().getRestorePermeableOn()).isEqualTo(reason);
+        assertThat(maybeRetrievedSegment.get().getRestorePermeableCondition()).isEqualTo(condition);
         assertThat(maybeRetrievedSegment.get().getFieldTestItems()).hasSize(0);
         assertThat(maybeRetrievedSegment.get().getPoolCount()).isEqualTo(poolCount);
         assertThat(maybeRetrievedSegment.get().isPermeable()).isEqualTo(permeable);
@@ -135,7 +136,7 @@ public class ExamSegmentRepositoryImplIntegrationTests {
         final String segmentKey = "Segment-key-1";
         final int segmentPos = 1;
         final String algorithm = "fixedform";
-        final Instant dateExited = Instant.now();
+        final Instant dateExited = Instant.now(Clock.systemUTC());
         final UUID examId = UUID.randomUUID();
         final int examItemCount = 3;
         final int ftItemCount = 0;
@@ -144,7 +145,7 @@ public class ExamSegmentRepositoryImplIntegrationTests {
         final String item = "item1";
         List<String> itemPool = new ArrayList<>();
         itemPool.add(item);
-        final String reason = "on pause";
+        final String condition = "on pause";
         final String formId = "form-id-1";
         final String formKey = "form-key-1";
 
@@ -162,7 +163,7 @@ public class ExamSegmentRepositoryImplIntegrationTests {
                 .withIsSatisfied(false)
                 .withPoolCount(poolCount)
                 .withItemPool(itemPool)
-                .withRestorePermeableOn(reason)
+                .withRestorePermeableCondition(condition)
                 .withFormKey(formKey)
                 .withFormId(formId)
                 .build();
@@ -189,7 +190,7 @@ public class ExamSegmentRepositoryImplIntegrationTests {
                 .withItemPool(itemPool)
                 .withFormKey(formKey)
                 .withFormId(formId)
-                .withRestorePermeableOn("new reason")
+                .withRestorePermeableCondition("new condition")
                 .build();
 
         commandRepository.update(updatedSegment);
@@ -201,7 +202,7 @@ public class ExamSegmentRepositoryImplIntegrationTests {
         assertThat(maybeRetrievedSegment.get().getSegmentPosition()).isEqualTo(segmentPos);
         assertThat(maybeRetrievedSegment.get().getAlgorithm()).isEqualTo(algorithm);
         assertThat(maybeRetrievedSegment.get().getCreatedAt()).isNotNull();
-//        assertThat(maybeRetrievedSegment.get().getDateExited()).isEqualTo(dateExited);
+        assertThat(maybeRetrievedSegment.get().getDateExited()).isEqualTo(dateExited);
         assertThat(maybeRetrievedSegment.get().getExamId()).isEqualTo(examId);
         assertThat(maybeRetrievedSegment.get().getExamItemCount()).isEqualTo(examItemCount);
         assertThat(maybeRetrievedSegment.get().getItemPool()).contains(item);
@@ -209,7 +210,7 @@ public class ExamSegmentRepositoryImplIntegrationTests {
         assertThat(maybeRetrievedSegment.get().getFormId()).isEqualTo(formId);
         assertThat(maybeRetrievedSegment.get().getFormKey()).isEqualTo(formKey);
         assertThat(maybeRetrievedSegment.get().getFormCohort()).isEqualTo(cohort);
-        assertThat(maybeRetrievedSegment.get().getRestorePermeableOn()).isEqualTo("new reason");
+        assertThat(maybeRetrievedSegment.get().getRestorePermeableCondition()).isEqualTo("new condition");
         assertThat(maybeRetrievedSegment.get().getFieldTestItems()).hasSize(0);
         assertThat(maybeRetrievedSegment.get().getPoolCount()).isEqualTo(poolCount);
         assertThat(maybeRetrievedSegment.get().isPermeable()).isEqualTo(newPermeable);
@@ -217,7 +218,7 @@ public class ExamSegmentRepositoryImplIntegrationTests {
     }
 
     @Test
-    public void shouldCreateAndRetrieveAllSegmentsForExam() {
+    public void shouldCreateAndRetrieveAllLatestSegments() {
         final String segmentId1 = "Segment-ID-1";
         final String segmentKey1 = "Segment-key-1";
         final int segmentPos1 = 1;
@@ -226,8 +227,9 @@ public class ExamSegmentRepositoryImplIntegrationTests {
         final int segmentPos2 = 2;
         final String algorithm1 = "adaptive2";
         final String algorithm2 = "fixedform";
-        final Instant dateExited = Instant.now();
+        final Instant dateExited = Instant.now(Clock.systemUTC());
         final UUID examId = UUID.randomUUID();
+        final UUID differentExamid = UUID.randomUUID();
         final int examItemCount = 3;
         final int ftItemCount = 0;
         final String cohort = "Default";
@@ -237,7 +239,7 @@ public class ExamSegmentRepositoryImplIntegrationTests {
         final String item = "item1";
         List<String> itemPool = new ArrayList<>();
         itemPool.add(item);
-        final String reason = "on pause";
+        final String condition = "on pause";
         final String formId = "form-id-1";
         final String formKey = "form-key-1";
 
@@ -256,7 +258,7 @@ public class ExamSegmentRepositoryImplIntegrationTests {
                 .withIsSatisfied(satisfied)
                 .withPoolCount(poolCount)
                 .withItemPool(itemPool)
-                .withRestorePermeableOn(reason)
+                .withRestorePermeableCondition(condition)
                 .withFormKey(formKey)
                 .withFormId(formId)
                 .build();
@@ -278,11 +280,32 @@ public class ExamSegmentRepositoryImplIntegrationTests {
                 .withItemPool(itemPool)
                 .withFormKey(formKey)
                 .withFormId(formId)
-                .withRestorePermeableOn(reason)
+                .withRestorePermeableCondition(condition)
+                .build();
+
+        ExamSegment segment3 = new ExamSegment.Builder()
+                .withAssessmentSegmentId(segmentId2)
+                .withAssessmentSegmentKey(segmentKey2)
+                .withSegmentPosition(segmentPos2)
+                .withAlgorithm(algorithm2)
+                .withDateExited(dateExited)
+                .withExamId(differentExamid)
+                .withExamItemCount(examItemCount)
+                .withFieldTestItemCount(ftItemCount)
+                .withFormCohort(cohort)
+                .withFieldTestItems(new ArrayList<>())
+                .withIsPermeable(permeable)
+                .withIsSatisfied(satisfied)
+                .withPoolCount(poolCount)
+                .withItemPool(itemPool)
+                .withFormKey(formKey)
+                .withFormId(formId)
+                .withRestorePermeableCondition(condition)
                 .build();
 
         commandRepository.insert(segment1);
         commandRepository.insert(segment2);
+        commandRepository.insert(segment3);
 
         ExamSegment segment1Updated = new ExamSegment.Builder()
                 .withAssessmentSegmentId(segmentId1)
@@ -299,33 +322,75 @@ public class ExamSegmentRepositoryImplIntegrationTests {
                 .withIsSatisfied(true)
                 .withPoolCount(poolCount)
                 .withItemPool(itemPool)
-                .withRestorePermeableOn(reason)
+                .withRestorePermeableCondition(condition)
+                .withFormKey(formKey)
+                .withFormId(formId)
+                .build();
+
+        itemPool.add("another item");
+
+        ExamSegment segment2Updated = new ExamSegment.Builder()
+                .withAssessmentSegmentId(segmentId2)
+                .withAssessmentSegmentKey(segmentKey2)
+                .withSegmentPosition(segmentPos2)
+                .withAlgorithm(algorithm2)
+                .withDateExited(dateExited)
+                .withExamId(examId)
+                .withExamItemCount(examItemCount)
+                .withFieldTestItemCount(ftItemCount)
+                .withFormCohort(cohort)
+                .withFieldTestItems(new ArrayList<>())
+                .withIsPermeable(true)
+                .withIsSatisfied(false)
+                .withPoolCount(poolCount)
+                .withItemPool(itemPool)
+                .withRestorePermeableCondition(condition)
                 .withFormKey(formKey)
                 .withFormId(formId)
                 .build();
 
         commandRepository.update(segment1Updated);
+        commandRepository.update(segment2Updated);
 
         List<ExamSegment> retrievedSegments = queryRepository.findByExamId(examId);
         assertThat(retrievedSegments).hasSize(2);
-//        assertThat(maybeRetrievedSegment).isPresent();
-//        assertThat(maybeRetrievedSegment.get().getAssessmentSegmentId()).isEqualTo(segmentId2);
-//        assertThat(maybeRetrievedSegment.get().getAssessmentSegmentKey()).isEqualTo(segmentKey2);
-//        assertThat(maybeRetrievedSegment.get().getSegmentPosition()).isEqualTo(segmentPos2);
-//        assertThat(maybeRetrievedSegment.get().getAlgorithm()).isEqualTo(algorithm1);
-//        assertThat(maybeRetrievedSegment.get().getCreatedAt()).isNotNull();
-////        assertThat(maybeRetrievedSegment.get().getDateExited()).isEqualTo(dateExited);
-//        assertThat(maybeRetrievedSegment.get().getExamId()).isEqualTo(examId);
-//        assertThat(maybeRetrievedSegment.get().getExamItemCount()).isEqualTo(examItemCount);
-//        assertThat(maybeRetrievedSegment.get().getItemPool()).contains(item);
-//        assertThat(maybeRetrievedSegment.get().getFieldTestItemCount()).isEqualTo(ftItemCount);
-//        assertThat(maybeRetrievedSegment.get().getFormId()).isEqualTo(formId);
-//        assertThat(maybeRetrievedSegment.get().getFormKey()).isEqualTo(formKey);
-//        assertThat(maybeRetrievedSegment.get().getFormCohort()).isEqualTo(cohort);
-//        assertThat(maybeRetrievedSegment.get().getRestorePermeableOn()).isEqualTo(reason);
-//        assertThat(maybeRetrievedSegment.get().getFieldTestItems()).hasSize(0);
-//        assertThat(maybeRetrievedSegment.get().getPoolCount()).isEqualTo(poolCount);
-//        assertThat(maybeRetrievedSegment.get().isPermeable()).isEqualTo(permeable);
-//        assertThat(maybeRetrievedSegment.get().isSatisfied()).isEqualTo(satisfied);
+        assertThat(retrievedSegments.get(0).getAssessmentSegmentId()).isEqualTo(segmentId1);
+        assertThat(retrievedSegments.get(0).getAssessmentSegmentKey()).isEqualTo(segmentKey1);
+        assertThat(retrievedSegments.get(0).getSegmentPosition()).isEqualTo(segmentPos1);
+        assertThat(retrievedSegments.get(0).getAlgorithm()).isEqualTo(algorithm1);
+        assertThat(retrievedSegments.get(0).getCreatedAt()).isNotNull();
+        assertThat(retrievedSegments.get(0).getDateExited()).isEqualTo(dateExited);
+        assertThat(retrievedSegments.get(0).getExamId()).isEqualTo(examId);
+        assertThat(retrievedSegments.get(0).getExamItemCount()).isEqualTo(examItemCount);
+        assertThat(retrievedSegments.get(0).getItemPool()).contains(item);
+        assertThat(retrievedSegments.get(0).getFieldTestItemCount()).isEqualTo(ftItemCount);
+        assertThat(retrievedSegments.get(0).getFormId()).isEqualTo(formId);
+        assertThat(retrievedSegments.get(0).getFormKey()).isEqualTo(formKey);
+        assertThat(retrievedSegments.get(0).getFormCohort()).isEqualTo(cohort);
+        assertThat(retrievedSegments.get(0).getRestorePermeableCondition()).isEqualTo(condition);
+        assertThat(retrievedSegments.get(0).getFieldTestItems()).hasSize(0);
+        assertThat(retrievedSegments.get(0).getPoolCount()).isEqualTo(poolCount);
+        assertThat(retrievedSegments.get(0).isPermeable()).isEqualTo(true);
+        assertThat(retrievedSegments.get(0).isSatisfied()).isEqualTo(true);
+
+        assertThat(retrievedSegments.get(1).getAssessmentSegmentId()).isEqualTo(segmentId2);
+        assertThat(retrievedSegments.get(1).getAssessmentSegmentKey()).isEqualTo(segmentKey2);
+        assertThat(retrievedSegments.get(1).getSegmentPosition()).isEqualTo(segmentPos2);
+        assertThat(retrievedSegments.get(1).getAlgorithm()).isEqualTo(algorithm2);
+        assertThat(retrievedSegments.get(1).getCreatedAt()).isNotNull();
+        assertThat(retrievedSegments.get(1).getDateExited()).isEqualTo(dateExited);
+        assertThat(retrievedSegments.get(1).getExamId()).isEqualTo(examId);
+        assertThat(retrievedSegments.get(1).getExamItemCount()).isEqualTo(examItemCount);
+        assertThat(retrievedSegments.get(1).getItemPool()).contains(item);
+        assertThat(retrievedSegments.get(1).getItemPool()).contains("another item");
+        assertThat(retrievedSegments.get(1).getFieldTestItemCount()).isEqualTo(ftItemCount);
+        assertThat(retrievedSegments.get(1).getFormId()).isEqualTo(formId);
+        assertThat(retrievedSegments.get(1).getFormKey()).isEqualTo(formKey);
+        assertThat(retrievedSegments.get(1).getFormCohort()).isEqualTo(cohort);
+        assertThat(retrievedSegments.get(1).getRestorePermeableCondition()).isEqualTo(condition);
+        assertThat(retrievedSegments.get(1).getFieldTestItems()).hasSize(0);
+        assertThat(retrievedSegments.get(1).getPoolCount()).isEqualTo(poolCount);
+        assertThat(retrievedSegments.get(1).isPermeable()).isEqualTo(true);
+        assertThat(retrievedSegments.get(1).isSatisfied()).isEqualTo(false);
     }
 }
