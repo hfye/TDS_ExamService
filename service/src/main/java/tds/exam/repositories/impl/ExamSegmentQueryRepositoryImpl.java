@@ -31,6 +31,9 @@ public class ExamSegmentQueryRepositoryImpl implements ExamSegmentQueryRepositor
         this.jdbcTemplate = queryJdbcTemplate;
     }
 
+    /**
+     * @inheritDoc
+     */
     @Override
     public List<ExamSegment> findByExamId(UUID examId) {
         final Map<String, Object> parameters = new HashMap<>();
@@ -82,6 +85,9 @@ public class ExamSegmentQueryRepositoryImpl implements ExamSegmentQueryRepositor
         return jdbcTemplate.query(SQL, parameters, new ExamSegmentRowMapper());
     }
 
+    /**
+     * @inheritDoc
+     */
     @Override
     public Optional<ExamSegment> findByExamIdAndSegmentPosition(UUID examId, int segmentPosition) {
         final Map<String, Object> parameters = new HashMap<>();
