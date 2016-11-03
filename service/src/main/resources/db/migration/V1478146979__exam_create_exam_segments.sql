@@ -1,5 +1,5 @@
 /***********************************************************************************************************************
-  File: V1477361333__exam_create_exam_segments.sql
+  File: V1478146979__exam_create_exam_segments.sql
 
   Desc: Creates the exam_segment and exam_segment_event database tables.
 
@@ -7,7 +7,7 @@
 
 USE exam;
 
-CREATE TABLE exam_segment (
+CREATE TABLE IF NOT EXISTS exam_segment (
   fk_segment_examid_exam VARBINARY(16) NOT NULL,
   assessment_segment_key VARCHAR(250) NOT NULL,
   assessment_segment_id VARCHAR(100) DEFAULT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE exam_segment (
   INDEX ix_created_at (created_at)
 );
 
-CREATE TABLE exam_segment_event (
+CREATE TABLE IF NOT EXISTS exam_segment_event (
   id INT NOT NULL AUTO_INCREMENT,
   fk_segment_examid_exam VARBINARY(16) NOT NULL,
   segment_position INT(11) NOT NULL,
