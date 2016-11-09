@@ -1,8 +1,5 @@
 package tds.exam.web.endpoints;
 
-import java.util.List;
-import java.util.UUID;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -16,14 +13,17 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.UUID;
+
 import tds.common.Response;
 import tds.common.web.exceptions.NotFoundException;
-import tds.exam.Accommodation;
 import tds.exam.ApprovalRequest;
 import tds.exam.Exam;
+import tds.exam.ExamAccommodation;
 import tds.exam.ExamApproval;
 import tds.exam.OpenExamRequest;
-import tds.exam.services.AccommodationService;
+import tds.exam.services.ExamAccommodationService;
 import tds.exam.services.ExamService;
 import tds.exam.web.resources.ExamApprovalResource;
 import tds.exam.web.resources.ExamResource;
@@ -32,12 +32,12 @@ import tds.exam.web.resources.ExamResource;
 @RequestMapping("/exam")
 public class ExamController {
     private final ExamService examService;
-    private final AccommodationService accommodationService;
+    private final ExamAccommodationService examAccommodationService;
 
     @Autowired
-    public ExamController(ExamService examService, AccommodationService accommodationService) {
+    public ExamController(ExamService examService, ExamAccommodationService examAccommodationService) {
         this.examService = examService;
-        this.accommodationService = accommodationService;
+        this.examAccommodationService = examAccommodationService;
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -76,14 +76,14 @@ public class ExamController {
     }
 
     @RequestMapping(value = "/{id}/{segmentId}/accommodations/{accommodationTypes}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<Accommodation>> getAccommodations(@PathVariable final UUID id,
-                                                                 @PathVariable final String segmentId,
-                                                                 @MatrixVariable(required = false) final String[] accommodationTypes) {
+    public ResponseEntity<List<ExamAccommodation>> getAccommodations(@PathVariable final UUID id,
+                                                                     @PathVariable final String segmentId,
+                                                                     @MatrixVariable(required = false) final String[] accommodationTypes) {
         if (accommodationTypes == null || accommodationTypes.length == 0) {
             throw new IllegalArgumentException("accommodation types with values are required");
         }
 
-        return ResponseEntity.ok(accommodationService.findAccommodations(id, segmentId, accommodationTypes));
+        return ResponseEntity.ok(examAccommodationService.findAccommodations(id, segmentId, accommodationTypes));
     }
 }
 

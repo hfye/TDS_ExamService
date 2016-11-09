@@ -6,10 +6,10 @@ import java.util.UUID;
 /**
  * An accommodation that is approved for use during an {@link Exam}.
  */
-public class Accommodation {
+public class ExamAccommodation {
     private long id;
     private UUID examId;
-    private String segmentId;
+    private String segmentKey;
     private String type;
     private String code;
     private String description;
@@ -19,7 +19,7 @@ public class Accommodation {
     public static class Builder {
         private long id;
         private UUID examId;
-        private String segmentId;
+        private String segmentKey;
         private String type;
         private String code;
         private String description;
@@ -40,12 +40,12 @@ public class Accommodation {
             return this;
         }
 
-        public Builder withSegmentId(String segmentId) {
-            if (segmentId == null) {
-                throw new IllegalArgumentException("segmentId cannot be null");
+        public Builder withSegmentKey(String segmentKey) {
+            if (segmentKey == null) {
+                throw new IllegalArgumentException("segmentKey cannot be null");
             }
 
-            this.segmentId = segmentId;
+            this.segmentKey = segmentKey;
             return this;
         }
 
@@ -85,15 +85,15 @@ public class Accommodation {
             return this;
         }
 
-        public Accommodation build() {
-            return new Accommodation(this);
+        public ExamAccommodation build() {
+            return new ExamAccommodation(this);
         }
     }
 
-    private Accommodation(Builder builder) {
+    private ExamAccommodation(Builder builder) {
         id = builder.id;
         examId = builder.examId;
-        segmentId = builder.segmentId;
+        segmentKey = builder.segmentKey;
         type = builder.type;
         code = builder.code;
         description = builder.description;
@@ -102,65 +102,65 @@ public class Accommodation {
     }
 
     /**
-     * @return The unique identifier of the {@link Accommodation} record
+     * @return The unique identifier of the {@link ExamAccommodation} record
      */
     public long getId() {
         return id;
     }
 
     /**
-     * @return The id of the {@link Exam} to which this {@link Accommodation} belongs
+     * @return The id of the {@link Exam} to which this {@link ExamAccommodation} belongs
      */
     public UUID getExamId() {
         return examId;
     }
 
     /**
-     * @return The segment of the Assessment in which this {@link Accommodation} can be used
+     * @return The segment of the Assessment in which this {@link ExamAccommodation} can be used
      */
-    public String getSegmentId() {
-        return segmentId;
+    public String getSegmentKey() {
+        return segmentKey;
     }
 
     /**
-     * @return The type of this {@link Accommodation}
+     * @return The type of this {@link ExamAccommodation}
      */
     public String getType() {
         return type;
     }
 
     /**
-     * @return The code for this {@link Accommodation}
+     * @return The code for this {@link ExamAccommodation}
      */
     public String getCode() {
         return code;
     }
 
     /**
-     * @return A description of what feature the {@link Accommodation} provides
+     * @return A description of what feature the {@link ExamAccommodation} provides
      */
     public String getDescription() {
         return description;
     }
 
     /**
-     * @return The time at which this {@link Accommodation} was denied (e.g. by a Proctor)
+     * @return The time at which this {@link ExamAccommodation} was denied (e.g. by a Proctor)
      */
     public Instant getDeniedAt() {
         return deniedAt;
     }
 
     /**
-     * @return The time at which this {@link Accommodation} was created
+     * @return The time at which this {@link ExamAccommodation} was created
      */
     public Instant getCreatedAt() {
         return createdAt;
     }
 
     /**
-     * Determine if this {@link Accommodation} is approved or not.
+     * Determine if this {@link ExamAccommodation} is approved or not.
      *
-     * @return True if this {@link Accommodation} is approved; otherwise false
+     * @return True if this {@link ExamAccommodation} is approved; otherwise false
      */
     public boolean isApproved() {
         return deniedAt == null;
