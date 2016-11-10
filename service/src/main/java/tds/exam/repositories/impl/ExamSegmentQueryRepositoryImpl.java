@@ -65,7 +65,7 @@ public class ExamSegmentQueryRepositoryImpl implements ExamSegmentQueryRepositor
                 "   SELECT \n" +
                 "       fk_segment_examid_exam AS exam_id, \n" +
                 "       segment_position, \n" +
-                "       MAX(created_at) AS created_at \n" +
+                "       MAX(id) AS id \n" +
                 "   FROM \n" +
                 "       exam_segment_event \n" +
                 "   WHERE fk_segment_examid_exam = :examId \n" +
@@ -78,7 +78,7 @@ public class ExamSegmentQueryRepositoryImpl implements ExamSegmentQueryRepositor
                 "   exam_segment_event se \n" +
                 "ON \n" +
                 "   last_event.exam_id = se.fk_segment_examid_exam AND \n" +
-                "   last_event.created_at = se.created_at \n" +
+                "   last_event.id = se.id \n" +
                 "ORDER BY \n" +
                 "   segment_position \n";
 
@@ -123,7 +123,7 @@ public class ExamSegmentQueryRepositoryImpl implements ExamSegmentQueryRepositor
                 "   s.fk_segment_examid_exam = :examId AND \n " +
                 "   s.segment_position = :segmentPosition \n" +
                 "ORDER BY \n" +
-                "   se.created_at \n" +
+                "   se.id \n" +
                 "DESC \n" +
                 "LIMIT 1";
 
