@@ -6,12 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tds.assessment.Assessment;
 import tds.assessment.Segment;
-import tds.exam.Accommodation;
+import tds.exam.ExamAccommodation;
 import tds.exam.Exam;
 import tds.exam.models.ExamSegment;
 import tds.exam.models.FormInfo;
 import tds.exam.models.SegmentPoolInfo;
-import tds.exam.repositories.AccommodationQueryRepository;
+import tds.exam.repositories.ExamAccommodationQueryRepository;
 import tds.exam.repositories.ExamSegmentCommandRepository;
 import tds.exam.repositories.ExamSegmentQueryRepository;
 import tds.exam.services.ExamSegmentService;
@@ -29,12 +29,12 @@ public class ExamSegmentServiceImpl implements ExamSegmentService {
 
     private ExamSegmentQueryRepository queryRepository;
     private ExamSegmentCommandRepository commandRepository;
-    private AccommodationQueryRepository accommodationQueryRepository;
+    private ExamAccommodationQueryRepository accommodationQueryRepository;
 
     @Autowired
     public ExamSegmentServiceImpl (ExamSegmentQueryRepository queryRepository,
                                    ExamSegmentCommandRepository commandRepository,
-                                   AccommodationQueryRepository accommodationQueryRepository) {
+                                   ExamAccommodationQueryRepository accommodationQueryRepository) {
         this.queryRepository = queryRepository;
         this.commandRepository = commandRepository;
         this.accommodationQueryRepository = accommodationQueryRepository;
@@ -56,7 +56,7 @@ public class ExamSegmentServiceImpl implements ExamSegmentService {
         }
 
         // StudentDLL 4589
-        List<Accommodation> languageAccommodation = accommodationQueryRepository.findAccommodations(exam.getId(),
+        List<ExamAccommodation> languageAccommodation = accommodationQueryRepository.findAccommodations(exam.getId(),
                 assessment.getSegments().get(0).getKey(), new String[] { LANGUAGE_ACC_TYPE });
         final String languageCode = languageAccommodation.get(0).getCode();
         Optional<String> maybeFormCohort = Optional.empty();
