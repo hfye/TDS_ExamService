@@ -17,14 +17,14 @@ public class SegmentBuilder {
     private List<ItemProperty> languages = singletonList(new ItemProperty("Language", "ENU", "language for assessment"));
 
     public Segment build() {
-        return new Segment.Builder(key)
-            .withLanguages(languages)
-            .withSegmentId(segmentId)
-            .withSelectionAlgorithm(selectionAlgorithm)
-            .withStartAbility(startAbility)
-            .withSubject(subjectName)
-            .withAssessmentKey(assessmentKey)
-            .build();
+        Segment segment = new Segment(key);
+        segment.setLanguages(languages);
+        segment.setSegmentId(segmentId);
+        segment.setSelectionAlgorithm(selectionAlgorithm);
+        segment.setStartAbility(startAbility);
+        segment.setSubject(subjectName);
+        segment.setAssessmentKey(assessmentKey);
+        return segment;
     }
 
     public SegmentBuilder withKey(String key) {

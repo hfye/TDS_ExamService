@@ -19,13 +19,13 @@ public class AssessmentBuilder {
     }
 
     public Assessment build() {
-        return new Assessment.Builder()
-            .withKey(key)
-            .withAssessmentId(assessmentId)
-            .withSegments(segments)
-            .withSelectionAlgorithm(selectionAlgorithm)
-            .withStartAbility(startAbility)
-            .build();
+        Assessment assessment = new Assessment();
+        assessment.setKey(key);
+        assessment.setAssessmentId(assessmentId);
+        assessment.setSegments(segments);
+        assessment.setSelectionAlgorithm(selectionAlgorithm);
+        assessment.setStartAbility(startAbility);
+        return assessment;
     }
 
     public AssessmentBuilder withKey(String key) {
