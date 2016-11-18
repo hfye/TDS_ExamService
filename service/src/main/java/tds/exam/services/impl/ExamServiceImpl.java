@@ -1,5 +1,6 @@
 package tds.exam.services.impl;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,47 +9,67 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import tds.assessment.Assessment;
 import tds.common.Response;
 import tds.common.ValidationError;
 import tds.common.data.legacy.LegacyComparer;
+import tds.config.Accommodation;
+import tds.config.AssessmentWindow;
+import tds.config.ClientSystemFlag;
 import tds.config.ClientTestProperty;
 import tds.config.TimeLimitConfiguration;
 import tds.exam.ApprovalRequest;
 import tds.exam.Exam;
+import tds.exam.ExamAccommodation;
 import tds.exam.ExamApproval;
 import tds.exam.ExamStatusCode;
 import tds.exam.OpenExamRequest;
 import tds.exam.error.ValidationErrorCode;
 import tds.exam.models.Ability;
+import tds.exam.repositories.ExamAccommodationCommandRepository;
+import tds.exam.repositories.ExamCommandRepository;
 import tds.exam.repositories.ExamQueryRepository;
 import tds.exam.repositories.HistoryQueryRepository;
 import tds.exam.services.AssessmentService;
+import tds.exam.services.ConfigService;
 import tds.exam.services.ExamService;
 import tds.exam.services.SessionService;
 import tds.exam.services.StudentService;
 import tds.exam.services.TimeLimitConfigurationService;
 import tds.session.ExternalSessionConfiguration;
 import tds.session.Session;
+import tds.student.RtsStudentPackageAttribute;
 import tds.student.Student;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static tds.common.time.JodaTimeConverter.convertJodaInstant;
+import static tds.config.ClientSystemFlag.ALLOW_ANONYMOUS_STUDENT_FLAG_TYPE;
+import static tds.exam.error.ValidationErrorCode.ANONYMOUS_STUDENT_NOT_ALLOWED;
+import static tds.exam.error.ValidationErrorCode.NO_OPEN_ASSESSMENT_WINDOW;
+import static tds.student.RtsStudentPackageAttribute.ACCOMMODATIONS;
+import static tds.student.RtsStudentPackageAttribute.ENTITY_NAME;
+import static tds.student.RtsStudentPackageAttribute.EXTERNAL_ID;
 
 @Service
 class ExamServiceImpl implements ExamService {
     private static final Logger LOG = LoggerFactory.getLogger(ExamServiceImpl.class);
 
     private final ExamQueryRepository examQueryRepository;
+    private final ExamCommandRepository examCommandRepository;
     private final HistoryQueryRepository historyQueryRepository;
     private final SessionService sessionService;
     private final StudentService studentService;
     private final AssessmentService assessmentService;
     private final TimeLimitConfigurationService timeLimitConfigurationService;
+    private final ConfigService configService;
+    private final ExamAccommodationCommandRepository examAccommodationCommandRepository;
 
     @Autowired
     public ExamServiceImpl(ExamQueryRepository examQueryRepository,
@@ -56,13 +77,19 @@ class ExamServiceImpl implements ExamService {
                            SessionService sessionService,
                            StudentService studentService,
                            AssessmentService assessmentService,
-                           TimeLimitConfigurationService timeLimitConfigurationService) {
+                           TimeLimitConfigurationService timeLimitConfigurationService,
+                           ConfigService configService,
+                           ExamCommandRepository examCommandRepository,
+                           ExamAccommodationCommandRepository examAccommodationCommandRepository) {
         this.examQueryRepository = examQueryRepository;
         this.historyQueryRepository = historyQueryRepository;
         this.sessionService = sessionService;
         this.studentService = studentService;
         this.assessmentService = assessmentService;
         this.timeLimitConfigurationService = timeLimitConfigurationService;
+        this.configService = configService;
+        this.examCommandRepository = examCommandRepository;
+        this.examAccommodationCommandRepository = examAccommodationCommandRepository;
     }
 
     @Override
@@ -72,22 +99,53 @@ class ExamServiceImpl implements ExamService {
 
     @Override
     public Response<Exam> openExam(OpenExamRequest openExamRequest) {
+        //Line 5602 in StudentDLL.  This has been moved to earlier in the flow than the original because it is used throughout.  The original
+        //fetches the external configuration multiple times in the different layers.
+        Optional<ExternalSessionConfiguration> maybeExternalSessionConfiguration = sessionService.findExternalSessionConfigurationByClientName(openExamRequest.getClientName());
+        if (!maybeExternalSessionConfiguration.isPresent()) {
+            throw new IllegalStateException(String.format("External Session Configuration could not be found for client name %s", openExamRequest.getClientName()));
+        }
+
+        ExternalSessionConfiguration externalSessionConfiguration = maybeExternalSessionConfiguration.get();
+
+        //Different parts of the session are queried throughout the legacy code.  Instead we fetch the entire session object in one call and pass
+        //the reference to those parts that require it.
         Optional<Session> maybeSession = sessionService.findSessionById(openExamRequest.getSessionId());
         if (!maybeSession.isPresent()) {
             throw new IllegalArgumentException(String.format("Could not find session for id %s", openExamRequest.getSessionId()));
         }
 
+        Session currentSession = maybeSession.get();
+
+        //Line OpenTestServiceImp line 126 - 130
+        if (!currentSession.isOpen()) {
+            return new Response<Exam>(new ValidationError(ValidationErrorCode.SESSION_NOT_OPEN, String.format("Session %s is not open", currentSession.getId())));
+        }
+
+        Student currentStudent = null;
         if (!openExamRequest.isGuestStudent()) {
             Optional<Student> maybeStudent = studentService.getStudentById(openExamRequest.getStudentId());
             if (!maybeStudent.isPresent()) {
                 throw new IllegalArgumentException(String.format("Could not find student for id %s", openExamRequest.getStudentId()));
+            } else {
+                currentStudent = maybeStudent.get();
+            }
+        } else {
+            //OpenTestServiceImpl lines 103 - 104
+            if (!allowsGuestStudent(openExamRequest.getClientName(), externalSessionConfiguration)) {
+                return new Response<Exam>(new ValidationError(ANONYMOUS_STUDENT_NOT_ALLOWED, String.format("Anonymous students not allowed for this client %s", openExamRequest.getClientName())));
             }
         }
 
-        Session currentSession = maybeSession.get();
+        Optional<Assessment> maybeAssessment = assessmentService.findAssessmentByKey(openExamRequest.getAssessmentKey());
+        if (!maybeAssessment.isPresent()) {
+            throw new IllegalArgumentException(String.format("Assessment information could not be found for assessment key %s", openExamRequest.getAssessmentKey()));
+        }
+
+        Assessment assessment = maybeAssessment.get();
 
         //Previous exam is retrieved in lines 5492 - 5530 and 5605 - 5645 in StudentDLL
-        Optional<Exam> maybePreviousExam = examQueryRepository.getLastAvailableExam(openExamRequest.getStudentId(), openExamRequest.getAssessmentId(), openExamRequest.getClientName());
+        Optional<Exam> maybePreviousExam = examQueryRepository.getLastAvailableExam(openExamRequest.getStudentId(), assessment.getAssessmentId(), openExamRequest.getClientName());
 
         boolean canOpenPreviousExam = false;
         if (maybePreviousExam.isPresent()) {
@@ -100,30 +158,19 @@ class ExamServiceImpl implements ExamService {
             canOpenPreviousExam = true;
         }
 
-        Exam exam;
         if (canOpenPreviousExam) {
             //Open previous exam
             LOG.debug("Can open previous exam");
-            exam = new Exam.Builder().withId(maybePreviousExam.get().getId()).build();
-        } else {
-            //Line 5602 in StudentDLL
-            Optional<ExternalSessionConfiguration> maybeExternalSessionConfiguration = sessionService.findExternalSessionConfigurationByClientName(openExamRequest.getClientName());
-
-            if (!maybeExternalSessionConfiguration.isPresent()) {
-                throw new IllegalStateException(String.format("External Session Configuration could not be found for client name %s", openExamRequest.getClientName()));
-            }
-
-            ExternalSessionConfiguration externalSessionConfiguration = maybeExternalSessionConfiguration.get();
-            Exam previousExam = maybePreviousExam.isPresent() ? maybePreviousExam.get() : null;
-            Optional<ValidationError> maybeOpenNewExam = canCreateNewExam(openExamRequest, previousExam, externalSessionConfiguration);
-            if (maybeOpenNewExam.isPresent()) {
-                return new Response<Exam>(maybeOpenNewExam.get());
-            }
-
-            exam = new Exam.Builder().withId(UUID.randomUUID()).build();
+            return new Response<>(new Exam.Builder().withId(maybePreviousExam.get().getId()).build());
         }
 
-        return new Response<>(exam);
+        Exam previousExam = maybePreviousExam.isPresent() ? maybePreviousExam.get() : null;
+        Optional<ValidationError> maybeOpenNewExamValidationError = canCreateNewExam(openExamRequest, previousExam, externalSessionConfiguration);
+        if (maybeOpenNewExamValidationError.isPresent()) {
+            return new Response<Exam>(maybeOpenNewExamValidationError.get());
+        }
+
+        return createExam(openExamRequest, currentSession, assessment, externalSessionConfiguration, previousExam);
     }
 
     @Override
@@ -238,27 +285,94 @@ class ExamServiceImpl implements ExamService {
         return Optional.empty();
     }
 
-    private Response<Exam> createExam(OpenExamRequest openExamRequest, Student student, Session session, ExternalSessionConfiguration externalSessionConfiguration) {
+    private Response<Exam> createExam(OpenExamRequest openExamRequest, Session session, Assessment assessment, ExternalSessionConfiguration externalSessionConfiguration, Exam previousExam) {
+        Exam.Builder examBuilder = new Exam.Builder();
+
         //From OpenTestServiceImpl lines 160 -163
-        String examStatus;
         if (openExamRequest.getProctorId() == null) {
-            examStatus = "approved";
+            examBuilder.withStatus(new ExamStatusCode.Builder().withStatus(ExamStatusCode.STATUS_APPROVED).build());
         } else {
-            examStatus = "pending";
+            examBuilder.withStatus(new ExamStatusCode.Builder().withStatus(ExamStatusCode.STATUS_PENDING).build());
         }
 
-        Instant startTime = Instant.now();
+        String guestAccommodations = openExamRequest.getGuestAccommodations();
+        if (openExamRequest.isGuestStudent()) {
+            examBuilder.withStudentName("GUEST");
+            examBuilder.withStudentKey("GUEST");
+        } else {
+            List<RtsStudentPackageAttribute> attributes = studentService.findStudentPackageAttributes(openExamRequest.getStudentId(), openExamRequest.getClientName(), EXTERNAL_ID, ENTITY_NAME, ACCOMMODATIONS);
 
+            for (RtsStudentPackageAttribute attribute : attributes) {
+                if (EXTERNAL_ID.equals(attribute.getName())) {
+                    examBuilder.withStudentKey(attribute.getValue());
+                } else if (ENTITY_NAME.equals(attribute.getName())) {
+                    examBuilder.withStudentName(attribute.getValue());
+                } else if (StringUtils.isEmpty(guestAccommodations) && ACCOMMODATIONS.equals(attribute.getName())) {
+                    guestAccommodations = attribute.getValue();
+                }
+            }
+        }
 
-        return null;
+        //OpenTestServiceImpl lines 317 - 341
+        AssessmentWindow[] assessmentWindows = configService.findAssessmentWindows(
+            openExamRequest.getClientName(),
+            assessment.getAssessmentId(),
+            session.getType(),
+            openExamRequest.getStudentId(),
+            externalSessionConfiguration
+        );
+
+        //OpenTestServiceImpl lines 344 - 365
+        Optional<AssessmentWindow> maybeWindow = Arrays.stream(assessmentWindows)
+            .filter(assessmentWindow -> assessmentWindow.getAssessmentKey().equals(openExamRequest.getAssessmentKey()))
+            .min((o1, o2) -> o1.getStartTime().compareTo(o2.getStartTime()));
+
+        //OpenTestServiceImpl line 367 - 368 validation check.  no window no exam
+        if (!maybeWindow.isPresent()) {
+            return new Response<Exam>(new ValidationError(NO_OPEN_ASSESSMENT_WINDOW, "Could not find an open assessment window"));
+        }
+
+        AssessmentWindow assessmentWindow = maybeWindow.get();
+
+        //OpenTestServiceImpl lines 381 0 395 were not implemented because "_version" is never used in the application.  It is
+        //inserted and updated throughout the flow but is not included in the TRT nor is used for any logic within the code.
+
+        Exam exam = examBuilder
+            .withId(UUID.randomUUID())
+            .withClientName(externalSessionConfiguration.getClientName())
+            .withStudentId(openExamRequest.getStudentId())
+            .withSessionId(session.getId())
+            .withBrowserId(openExamRequest.getBrowserId())
+            .withAssessmentId(assessment.getAssessmentId())
+            .withAssessmentKey(assessment.getKey())
+            .withAttempts(previousExam == null ? 1 : previousExam.getAttempts() + 1)
+            .withAssessmentAlgorithm(assessment.getSelectionAlgorithm())
+            .withSegmented(assessment.isSegmented())
+            .withDateJoined(org.joda.time.Instant.now())
+            .withAssessmentWindowId(assessmentWindow.getWindowId())
+            .withEnvironment(externalSessionConfiguration.getEnvironment())
+            .withSubject(assessment.getSubject())
+            .build();
+
+        examCommandRepository.save(exam);
+
+        //Lines 412 - 421 OpenTestServiceImpl is not implemented.  After talking with data warehouse and Smarter Balanced
+        //The initial student attributes are not used and smarter balance suggested removing them
+
+        initializeExamAccommodations(exam);
+
+        //Lines OpenTestServiceImpl lines 428-447 not implemented.  Instead exam status is set during insert instead of inserting
+        //and then updating status after accommodations
+
+        return new Response<>(exam);
     }
 
     /**
-     * Gets the most recent {@link Ability} based on the dateScored value for the same assessment.
+     * Gets the most recent {@link tds.exam.models.Ability} based on the dateScored value for the same assessment.
      *
-     * @param abilityList  the list of {@link Ability}s to iterate through
+     * @param abilityList  the list of {@link tds.exam.models.Ability}s to iterate through
      * @param assessmentId The test key
-     * @return
+     * @return the {@link tds.exam.models.Ability} that lines up with the assessment id
      */
     private Optional<Ability> getMostRecentTestAbilityForSameAssessment(List<Ability> abilityList, String assessmentId) {
         for (Ability ability : abilityList) {
@@ -273,15 +387,14 @@ class ExamServiceImpl implements ExamService {
     }
 
     /**
-     * Gets the most recent {@link Ability} based on the dateScored value for a different assessment.
+     * Gets the most recent {@link tds.exam.models.Ability} based on the dateScored value for a different assessment.
      *
-     * @param abilityList  the list of {@link Ability}s to iterate through
+     * @param abilityList  the list of {@link tds.exam.models.Ability}s to iterate through
      * @param assessmentId The test key
-     * @return
+     * @return the {@link tds.exam.models.Ability} that lines up with the assessment id
      */
     private Optional<Ability> getMostRecentTestAbilityForDifferentAssessment(List<Ability> abilityList, String assessmentId) {
         for (Ability ability : abilityList) {
-
             if (!assessmentId.equals(ability.getAssessmentId())) {
                 /* NOTE: The query that retrieves the list of abilities is sorted by the "date_scored" of the exam in
                    descending order. Therefore we can assume the first match is the most recent */
@@ -336,35 +449,83 @@ class ExamServiceImpl implements ExamService {
     }
 
     private Optional<ValidationError> canCreateNewExam(OpenExamRequest openExamRequest, Exam previousExam, ExternalSessionConfiguration externalSessionConfiguration) {
+        //Lines 5610 - 5618 in StudentDLL was not implemented.  The reason is that the max opportunities is always
+        //3 via the loader scripts.  So the the conditional in the StudentDLL code will always allow one to open a new
+        //Exam if previous exam is null (0 ocnt in the legacy code)
 
-        //Lines 5612 - 5618 in StudentDLL
-        if (previousExam == null) {
-            if (openExamRequest.getMaxAttempts() < 0 && LegacyComparer.notEqual("SIMULATION", externalSessionConfiguration.getEnvironment())) {
-                return Optional.of(new ValidationError(ValidationErrorCode.SIMULATION_ENVIRONMENT_REQUIRED, "Environment must be simulation when max attempts less than zero"));
-            }
-
-            return Optional.empty();
+        //Get timelmits for delay days  Line 516-525 OpenTestServiceImpl
+        Integer numberOfDaysToDelay = null;
+        Optional<TimeLimitConfiguration> maybeTimeLimitConfiguration = timeLimitConfigurationService.findTimeLimitConfiguration(openExamRequest.getClientName(), openExamRequest.getAssessmentKey());
+        if (maybeTimeLimitConfiguration.isPresent()) {
+            numberOfDaysToDelay = maybeTimeLimitConfiguration.get().getExamDelayDays();
         }
 
         //Lines 5645 - 5673 in StudentDLL
-        if (ExamStatusCode.STAGE_CLOSED.equals(previousExam.getStatus().getStage())) {
-            if (LegacyComparer.isEqual("SIMULATION", externalSessionConfiguration.getEnvironment())) {
+        if (previousExam != null) {
+            //This is done with a query in the legacy application but we can just check the status of the previous exam fetched in a previous step.
+            if (!ExamStatusCode.STAGE_CLOSED.equals(previousExam.getStatus().getStage())) {
+                return Optional.of(new ValidationError(ValidationErrorCode.PREVIOUS_EXAM_NOT_CLOSED, "Previous exam is not closed"));
+            }
+
+            //Lines 5646 - 5649
+            if (externalSessionConfiguration.isInSimulationEnvironment()) {
                 return Optional.empty();
             }
 
-            if (previousExam.getDateCompleted() != null) {
-                Duration duration = Duration.between(convertJodaInstant(previousExam.getDateChanged()), Instant.now());
-                if (LegacyComparer.lessThan(previousExam.getAttempts(), openExamRequest.getMaxAttempts()) &&
-                    LegacyComparer.greaterThan(duration.get(DAYS), openExamRequest.getNumberOfDaysToDelay())) {
-                    return Optional.empty();
-                } else if (LegacyComparer.greaterOrEqual(previousExam.getAttempts(), openExamRequest.getMaxAttempts())) {
-                    return Optional.of(new ValidationError(ValidationErrorCode.MAX_OPPORTUNITY_EXCEEDED, "Max number of attempts for exam exceeded"));
-                } else {
-                    return Optional.of(new ValidationError(ValidationErrorCode.NOT_ENOUGH_DAYS_PASSED, String.format("Next exam cannot be started until %s days pass since last exam", openExamRequest.getNumberOfDaysToDelay())));
-                }
+            //Verifies that the new exam does not exceed attempts and there are enough days since the last attempt
+            boolean daysSinceLastExamThreshold = previousExam.getDateCompleted() == null ||
+                LegacyComparer.greaterThan(Duration.between(convertJodaInstant(previousExam.getDateCompleted()), Instant.now()).get(DAYS), numberOfDaysToDelay);
+
+            if (LegacyComparer.lessThan(previousExam.getAttempts(), openExamRequest.getMaxAttempts()) &&
+                daysSinceLastExamThreshold) {
+                return Optional.empty();
+            } else if (LegacyComparer.greaterOrEqual(previousExam.getAttempts(), openExamRequest.getMaxAttempts())) {
+                return Optional.of(new ValidationError(ValidationErrorCode.MAX_OPPORTUNITY_EXCEEDED, "Max number of attempts for exam exceeded"));
+            } else {
+                return Optional.of(new ValidationError(ValidationErrorCode.NOT_ENOUGH_DAYS_PASSED, String.format("Next exam cannot be started until %s days pass since last exam", numberOfDaysToDelay)));
             }
         }
 
         return Optional.empty();
+    }
+
+    //Should have long term cache
+    private boolean allowsGuestStudent(String clientName, ExternalSessionConfiguration externalSessionConfiguration) {
+        if (externalSessionConfiguration.isInSimulationEnvironment()) {
+            return true;
+        }
+
+        Optional<ClientSystemFlag> maybeAllowGuestAccessFlag = configService.findClientSystemFlag(clientName, ALLOW_ANONYMOUS_STUDENT_FLAG_TYPE);
+
+        return maybeAllowGuestAccessFlag.isPresent() && maybeAllowGuestAccessFlag.get().isEnabled();
+    }
+
+    private void initializeExamAccommodations(Exam exam) {
+        // This method replaces StudentDLL._InitOpportunityAccommodations_SP.
+
+        // StudentDLL fetches the key accommodations via CommonDLL.TestKeyAccommodations_FN which this call replicates.  The legacy application leverages
+        // temporary tables for most of its data structures which is unnecessary in this case so a collection is returned.
+        Accommodation[] assessmentAccommodations = configService.findAssessmentAccommodations(exam.getAssessmentKey());
+
+        // StudentDLL line 6645 - the query filters the results of the temporary table fetched above by these two values.
+        // It was decided the record usage and report usage values that are also queried are not actually used.
+        List<Accommodation> accommodations = Arrays.stream(assessmentAccommodations).filter(accommodation ->
+            accommodation.isDefaultAccommodation() && accommodation.getDependsOnToolType() == null).collect(Collectors.toList());
+
+        List<ExamAccommodation> examAccommodations = new ArrayList<>();
+        accommodations.forEach(accommodation -> {
+            ExamAccommodation examAccommodation = new ExamAccommodation.Builder()
+                .withExamId(exam.getId())
+                .withCode(accommodation.getAccommodationCode())
+                .withType(accommodation.getAccommodationType())
+                .withDescription(accommodation.getAccommodationValue())
+                .withSegmentKey(accommodation.getSegmentKey())
+                .build();
+
+            examAccommodations.add(examAccommodation);
+        });
+
+        //Inserts the accommodations into the exam system.
+        examAccommodationCommandRepository.insertAccommodations(examAccommodations);
     }
 }

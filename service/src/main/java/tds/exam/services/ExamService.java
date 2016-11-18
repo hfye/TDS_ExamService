@@ -6,9 +6,9 @@ import java.util.UUID;
 import tds.common.Response;
 import tds.common.ValidationError;
 import tds.config.ClientTestProperty;
+import tds.exam.ApprovalRequest;
 import tds.exam.Exam;
 import tds.exam.ExamApproval;
-import tds.exam.ApprovalRequest;
 import tds.exam.OpenExamRequest;
 import tds.session.Session;
 
@@ -25,6 +25,12 @@ public interface ExamService {
      */
     Optional<Exam> getExam(UUID uuid);
 
+    /**
+     * Opens a new exam
+     *
+     * @param openExamRequest {@link tds.exam.OpenExamRequest}
+     * @return {@link tds.common.Response<tds.exam.Exam>} containing exam or errors
+     */
     Response<Exam> openExam(OpenExamRequest openExamRequest);
 
     /**

@@ -55,6 +55,7 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
                 "   e.date_deleted, \n" +
                 "   e.date_changed, \n" +
                 "   e.date_completed, \n" +
+                "   e.date_joined, \n" +
                 "   e.date_scored, \n" +
                 "   e.created_at, \n" +
                 "   esc.description, \n" +
@@ -101,6 +102,7 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
                 "   e.status_change_reason, \n" +
                 "   e.client_name, \n" +
                 "   e.subject, \n" +
+                "   e.date_joined, \n" +
                 "   e.date_started, \n" +
                 "   e.date_deleted, \n" +
                 "   e.date_changed, \n" +
@@ -199,6 +201,7 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
                 .withDateScored(mapTimestampToJodaInstant(rs, "date_scored"))
                 .withDateCompleted(mapTimestampToJodaInstant(rs, "date_completed"))
                 .withCreatedAt(mapTimestampToJodaInstant(rs, "created_at"))
+                .withDateJoined(mapTimestampToJodaInstant(rs, "date_joined"))
                 .withStatus(new ExamStatusCode.Builder()
                     .withStatus(rs.getString("status"))
                     .withDescription(rs.getString("description"))
