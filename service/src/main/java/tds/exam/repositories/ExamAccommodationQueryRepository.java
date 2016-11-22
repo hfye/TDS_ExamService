@@ -18,4 +18,12 @@ public interface ExamAccommodationQueryRepository {
      * @return A list of {@link tds.exam.ExamAccommodation}s that correspond to the specified accommodation types
      */
     List<ExamAccommodation> findAccommodations(UUID examId, String segmentKey, String[] accommodationTypes);
+
+    /**
+     * Retrieves a list of {@link tds.exam.ExamAccommodation}s for the specified exam.
+     *
+     * @param examId    The id of the {@link tds.exam.Exam} that owns the {@link tds.exam.ExamAccommodation}s
+     * @return  A list of {@link tds.exam.ExamAccommodation}s that correspond to the specified examId
+     */
+    List<ExamAccommodation> findAllAccommodations(UUID examId);
 }

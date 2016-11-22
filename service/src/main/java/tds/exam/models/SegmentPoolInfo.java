@@ -1,57 +1,52 @@
 package tds.exam.models;
 
-import java.util.List;
+import java.util.Set;
 
 /**
- * A class that contains information about a segment pool.
+ * A class that contains information about a computed segment pool.
  */
 public class SegmentPoolInfo {
-    private Integer newLength;
-    private Integer itemPoolCount;
-    private List<String> items;
+    private int length;
+    private int poolCount;
+    private Set<String> itemPoolIds;
 
     public SegmentPoolInfo(Builder builder) {
-        this.newLength = builder.newLength;
-        this.itemPoolCount = builder.itemPoolCount;
-        this.items = builder.items;
+        this.length = builder.length;
+        this.poolCount = builder.poolCount;
+        this.itemPoolIds = builder.itemPoolIds;
     }
 
-    public Integer getNewLength() {
-        return newLength;
+    public long getNewLength() {
+        return length;
     }
 
-    public Integer getItemPoolCount() {
-        return itemPoolCount;
+    public int getItemPoolCount() {
+        return poolCount;
     }
 
-    public List<String> getItems() {
-        return items;
+    public Set<String> getItemPoolIds() {
+        return itemPoolIds;
     }
 
     public static final class Builder {
-        private Integer newLength;
-        private Integer itemPoolCount;
-        private List<String> items;
+        private int length;
+        private int poolCount;
+        private Set<String> itemPoolIds;
 
-        private Builder() {
-        }
+        public Builder() {}
 
-        public static Builder aSegmentPoolInfo() {
-            return new Builder();
-        }
-
-        public Builder withNewLength(int newLength) {
-            this.newLength = newLength;
+        public Builder withLength(int length) {
+            this.length = length;
             return this;
         }
 
-        public Builder withItemPoolCount(int itemPoolCount) {
-            this.itemPoolCount = itemPoolCount;
+        public Builder withPoolCount(int poolCount) {
+            this.poolCount = poolCount;
             return this;
         }
 
-        public Builder withItems(List<String> items) {
-            this.items = items;
+        public Builder withItemPoolIds(Set<String> itemPoolIds) {
+            this.itemPoolIds = itemPoolIds;
             return this;
         }
 

@@ -15,6 +15,7 @@ import tds.exam.repositories.ExamAccommodationQueryRepository;
 import tds.exam.repositories.ExamSegmentCommandRepository;
 import tds.exam.repositories.ExamSegmentQueryRepository;
 import tds.exam.services.ExamSegmentService;
+import tds.exam.services.SegmentPoolService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,15 +30,18 @@ public class ExamSegmentServiceImpl implements ExamSegmentService {
 
     private ExamSegmentQueryRepository queryRepository;
     private ExamSegmentCommandRepository commandRepository;
-    private ExamAccommodationQueryRepository accommodationQueryRepository;
+    private ExamAccommodationQueryRepository examAccommodationQueryRepository;
+    private SegmentPoolService segmentPoolService;
 
     @Autowired
     public ExamSegmentServiceImpl (ExamSegmentQueryRepository queryRepository,
                                    ExamSegmentCommandRepository commandRepository,
-                                   ExamAccommodationQueryRepository accommodationQueryRepository) {
+                                   ExamAccommodationQueryRepository examAccommodationQueryRepository,
+                                   SegmentPoolService segmentPoolService) {
         this.queryRepository = queryRepository;
         this.commandRepository = commandRepository;
-        this.accommodationQueryRepository = accommodationQueryRepository;
+        this.examAccommodationQueryRepository = examAccommodationQueryRepository;
+        this.segmentPoolService = segmentPoolService;
     }
 
     /**
@@ -56,7 +60,7 @@ public class ExamSegmentServiceImpl implements ExamSegmentService {
         }
 
         // StudentDLL 4589
-        List<ExamAccommodation> languageAccommodation = accommodationQueryRepository.findAccommodations(exam.getId(),
+        List<ExamAccommodation> languageAccommodation = examAccommodationQueryRepository.findAccommodations(exam.getId(),
                 assessment.getSegments().get(0).getKey(), new String[] { LANGUAGE_ACC_TYPE });
         final String languageCode = languageAccommodation.get(0).getCode();
         Optional<String> maybeFormCohort = Optional.empty();
@@ -93,7 +97,8 @@ public class ExamSegmentServiceImpl implements ExamSegmentService {
                     maybeFormCohort = getFormCohort(examSegment, assessment);
                 }
             } else { // Algorithm is adaptive2
-                SegmentPoolInfo segmentPoolInfo = null;//computeSegmentPool(exam.getId(), assessment.getKey(), sessionPoolKey);
+                SegmentPoolInfo segmentPoolInfo = segmentPoolService.computeSegmentPool(exam,
+                        assessment.getSegment(examSegment.getAssessmentSegmentKey()), assessment.getItemConstraints());
                 boolean isEligible = true; //TODO: FT_IsEligible_FN
                 fieldTestItemCount = 0;
                 items = segmentPoolInfo.getItems();
