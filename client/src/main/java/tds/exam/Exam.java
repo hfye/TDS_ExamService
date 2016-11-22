@@ -24,6 +24,14 @@ public class Exam {
     private Instant dateScored;
     private Instant dateCompleted;
     private Instant createdAt;
+    private String loginSSID;
+    private String studentName;
+    private Instant dateJoined;
+    private String assessmentWindowId;
+    private String assessmentAlgorithm;
+    private String assessmentKey;
+    private String environment;
+    private boolean segmented;
 
     public static class Builder {
         private UUID id;
@@ -42,6 +50,54 @@ public class Exam {
         private Instant createdAt;
         private Instant dateScored;
         private Instant dateCompleted;
+        private String loginSSID;
+        private String studentName;
+        private Instant dateJoined;
+        private String assessmentWindowId;
+        private String assessmentAlgorithm;
+        private String assessmentKey;
+        private String environment;
+        private boolean segmented;
+
+        public Builder withSegmented(boolean segmented) {
+            this.segmented = segmented;
+            return this;
+        }
+
+        public Builder withLoginSSID(String loginSSID) {
+            this.loginSSID = loginSSID;
+            return this;
+        }
+
+        public Builder withStudentName(String studentName) {
+            this.studentName = studentName;
+            return this;
+        }
+
+        public Builder withDateJoined(Instant dateJoined) {
+            this.dateJoined = dateJoined;
+            return this;
+        }
+
+        public Builder withAssessmentWindowId(String windowId) {
+            this.assessmentWindowId = windowId;
+            return this;
+        }
+
+        public Builder withAssessmentAlgorithm(String assessmentAlgorithm) {
+            this.assessmentAlgorithm = assessmentAlgorithm;
+            return this;
+        }
+
+        public Builder withAssessmentKey(String assessmentKey) {
+            this.assessmentKey = assessmentKey;
+            return this;
+        }
+
+        public Builder withEnvironment(String environment) {
+            this.environment = environment;
+            return this;
+        }
 
         public Builder withId(UUID newId) {
             id = newId;
@@ -145,6 +201,14 @@ public class Exam {
         dateScored = builder.dateScored;
         createdAt = builder.createdAt;
         dateCompleted = builder.dateCompleted;
+        loginSSID = builder.loginSSID;
+        studentName = builder.studentName;
+        dateJoined = builder.dateJoined;
+        assessmentWindowId = builder.assessmentWindowId;
+        assessmentAlgorithm = builder.assessmentAlgorithm;
+        assessmentKey = builder.assessmentKey;
+        environment = builder.environment;
+        segmented = builder.segmented;
     }
 
     /**
@@ -264,5 +328,61 @@ public class Exam {
      */
     public Instant getDateScored() {
         return dateScored;
+    }
+
+    /**
+     * @return the student key of the student taking the exam
+     */
+    public String getLoginSSID() {
+        return loginSSID;
+    }
+
+    /**
+     * @return the name of the student taking the exam
+     */
+    public String getStudentName() {
+        return studentName;
+    }
+
+    /**
+     * @return the time when the student joined the session
+     */
+    public Instant getDateJoined() {
+        return dateJoined;
+    }
+
+    /**
+     * @return the assessment window id
+     */
+    public String getAssessmentWindowId() {
+        return assessmentWindowId;
+    }
+
+    /**
+     * @return the algorithm associated with the assessment
+     */
+    public String getAssessmentAlgorithm() {
+        return assessmentAlgorithm;
+    }
+
+    /**
+     * @return the unique key for the assessment
+     */
+    public String getAssessmentKey() {
+        return assessmentKey;
+    }
+
+    /**
+     * @return the environment.
+     */
+    public String getEnvironment() {
+        return environment;
+    }
+
+    /**
+     * @return {@code true} associated assessment is segmented
+     */
+    public boolean isSegmented() {
+        return segmented;
     }
 }

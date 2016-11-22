@@ -5,11 +5,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
-import tds.exam.repositories.HistoryQueryRepository;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+
+import tds.exam.repositories.HistoryQueryRepository;
 
 /**
  * Class for retrieving data from the exam history table.
