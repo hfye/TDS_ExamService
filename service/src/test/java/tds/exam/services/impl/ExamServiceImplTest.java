@@ -309,7 +309,7 @@ public class ExamServiceImplTest {
         Exam exam = examResponse.getData().get();
 
         assertThat(exam.getAssessmentId()).isEqualTo(assessment.getAssessmentId());
-        assertThat(exam.getAssessmentAlgorithm()).isEqualTo(assessment.getSelectionAlgorithm().getAlgorithmName());
+        assertThat(exam.getAssessmentAlgorithm()).isEqualTo(assessment.getSelectionAlgorithm().getType());
         assertThat(exam.getAssessmentKey()).isEqualTo(openExamRequest.getAssessmentKey());
         assertThat(exam.getAssessmentWindowId()).isEqualTo("window1");
         assertThat(exam.getAttempts()).isEqualTo(1);
