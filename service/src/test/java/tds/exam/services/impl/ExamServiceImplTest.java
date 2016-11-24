@@ -796,7 +796,7 @@ public class ExamServiceImplTest {
         Assessment assessment = new Assessment();
         assessment.setKey("(SBAC)SBAC ELA 3-ELA-3-Spring-2112a");
         assessment.setAssessmentId(assessmentId);
-        assessment.setSelectionAlgorithm(Algorithm.ADAPTIVE_2);
+        assessment.setSelectionAlgorithm(Algorithm.FIXED_FORM);
         assessment.setStartAbility(assessmentAbilityVal);
 
         ClientTestProperty clientTestProperty = new ClientTestProperty.Builder()
