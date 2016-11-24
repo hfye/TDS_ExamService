@@ -1,5 +1,7 @@
 package tds.exam.services.impl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +14,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+import tds.assessment.Algorithm;
 import tds.assessment.Assessment;
 import tds.assessment.Item;
 import tds.assessment.ItemConstraint;
@@ -31,73 +34,72 @@ import tds.exam.services.SegmentPoolService;
  */
 @Service
 public class SegmentPoolServiceImpl implements SegmentPoolService {
-    private AssessmentService assessmentService;
+    private static final Logger LOG = LoggerFactory.getLogger(SegmentPoolServiceImpl.class);
     private ExamAccommodationService examAccommodationService;
 
     @Autowired
-    public SegmentPoolServiceImpl(AssessmentService assessmentService,
-                                  ExamAccommodationService examAccommodationService) {
-        this.assessmentService = assessmentService;
+    public SegmentPoolServiceImpl(ExamAccommodationService examAccommodationService) {
         this.examAccommodationService = examAccommodationService;
     }
 
     @Override
     public SegmentPoolInfo computeSegmentPool(UUID examId, Segment segment, List<ItemConstraint> itemConstraints) {
-
+        // Get the list of eligible items based on constraints and exam accommodations
+        Set<Item> itemPool = getItemPool(examId, itemConstraints, segment.getItems());
         /* getItemPool selects the items that are eligible for the segment pool we are constructing.
            In legacy code, we can skip a lot of the temp-table initialization logic because of this */
-        Set<Item> itemPool = getItemPool(examId, itemConstraints, segment.getItems());
         Set<Strand> strands = segment.getStrands();
         List<SegmentBluePrint> segmentBluePrints = new ArrayList<>();
 
         for (Item item : itemPool) {
+            // Find items with matching strands and non-null adaptiveCut value
             Optional<Strand> maybeItemStrand = strands.stream()
-                    .filter(strand -> strand.getName().equals(item.getStrand()))
+                    .filter(strand ->
+                            strand.getName().equals(item.getStrand()) &&
+                            strand.getAdaptiveCut() != null)
                     .findFirst();
 
             if (maybeItemStrand.isPresent()) {
-                /* LN 2895 - they join a temp table with itemstrands. Since we have the itemstrands and item info
-                    already in the assessment object, we can get the poolcount here */
                 Strand itemStrand = maybeItemStrand.get();
+                /* LN 2895 - they join a temp table with itemstrands. Since we have the strands and item info
+                    already in the assessment object, we can get the poolcount here */
+                // Get the count of (non-field test) items that have the same strand value
                 int poolCount = (int) itemPool.stream()
-                        .filter(innerItem -> !innerItem.isFieldTest() &&
+                        .filter(innerItem ->
+                                !innerItem.isFieldTest() &&
                                 innerItem.getStrand().equals(itemStrand.getName()))
                         .count();
 
                 segmentBluePrints.add(new SegmentBluePrint(
                         item.getStrand(),
                         itemStrand.getMinItems(),
-                        itemStrand.getMaxItems(),
                         poolCount));
             } else {
-                //TODO: Throw exception? Log error?
+                LOG.warn(String.format("No strand match for item with id \"{}\" and strand \"{}\". Unable to add to segment pool computation"),
+                        item.getId(), item.getStrand());
             }
         }
 
-        /* LN 2887,2914:
-            sessionKey is null only when we are not in simulation mode. See line 4622.
-            TODO: Skip the conditional branch of code [2914-2938] until simulation mode is implemented
-         */
+        /* [2887,2914]: sessionKey is null only when we are not in simulation mode. See line 4622.
+            TODO: Skip the conditional branch of code [2914-2938] until simulation mode is implemented  */
 
-        /* [2904] Realistically, this should always be 'adaptive2' here, but we'll follow their conditional logic anyway */
-        //TODO: Remove this magic string - create algorithm enum??
-        int testLength = "adaptive2".equals(segment.getSelectionAlgorithm()) ? segment.getMaxItems() : segment.getMinItems();
+        /* [2904] Realistically, this should always be 'adaptive2' here, but we'll follow legacy conditional logic anyway */
+        int testLength = Algorithm.ADAPTIVE_2.equals(segment.getSelectionAlgorithm()) ? segment.getMaxItems() : segment.getMinItems();
         /* [2939] select convert(sum(minitems - poolcnt), SIGNED) as shortfall from ${bluePrintTable} where poolcnt < minitems */
-        int fallback = (int) segmentBluePrints.stream()
-                .filter(pool -> pool.getPoolCount() < pool.getMinItems())
-                .mapToLong(pool -> pool.getMinItems() - pool.getPoolCount())
+        int shortfall = segmentBluePrints.stream()
+                .filter(bluePrint -> bluePrint.getPoolCount() < bluePrint.getMinItems())
+                .mapToInt(bluePrint -> bluePrint.getMinItems() - bluePrint.getPoolCount())
                 .sum();
-        /* Get the sum of all the strands: select convert(sum(poolcnt), SIGNED) as strandcnt from ${bluePrintTable}; */
-        int strandCount = (int) segmentBluePrints.stream()
-                .mapToLong(SegmentBluePrint::getPoolCount)
+        /* [1885] Get the sum of all the strands: select convert(sum(poolcnt), SIGNED) as strandcnt from ${bluePrintTable}; */
+        int strandCount = segmentBluePrints.stream()
+                .mapToInt(SegmentBluePrint::getPoolCount)
                 .sum();
-        int lengthDelta = testLength - fallback;
-        int newLength;
-        if (LegacyComparer.lessThan(lengthDelta, strandCount)) {
-            newLength =  lengthDelta > 0 ? lengthDelta : testLength;
-        } else {
-            newLength = strandCount;
-        }
+        int lengthDelta = testLength - shortfall;
+        int newLength = lengthDelta < strandCount ?
+                lengthDelta > 0 ?
+                        lengthDelta :
+                        testLength
+                : strandCount;
 
         Set<String> itemPoolIds = itemPool.stream().map(Item::getId).collect(Collectors.toSet());
 
@@ -108,9 +110,17 @@ public class SegmentPoolServiceImpl implements SegmentPoolService {
                 .build();
     }
 
+    /*
+        This method is meant to replace StudentDLL._AA_ItempoolString_FNOptimized() [1643]
+        The purpose of this method is to find the list of items to include in the segment by taking the following steps:
+
+        1. Retrieve the accommodations that the student has enabled
+        2. Find the matching set of (inclusive) item constraints - typically this is "Language"
+        3. Find the set of items that satisfy/match the inclusive item constraints
+        4. Exclude the items that match the "excluded" accommodations (based on constraints)
+     */
     public Set<Item> getItemPool(UUID examId, List<ItemConstraint> itemConstraints, List<Item> items) {
         List<ExamAccommodation> allAccommodations = examAccommodationService.findAllAccommodations(examId);
-
         List<ItemProperty> itemProperties = items.stream()
                 .flatMap(item -> item.getItemProperties().stream())
                 .collect(Collectors.toList());
@@ -124,13 +134,13 @@ public class SegmentPoolServiceImpl implements SegmentPoolService {
                 .map(itemConstraint -> accommodation))
             .collect(Collectors.toSet());
 
-//        Set<ExamAccommodation> excludedAccommodations = allAccommodations.stream()
-//                .flatMap(accommodation -> itemConstraints.stream()
-//                        .filter(itemConstraint -> !itemConstraint.isInclusive() &&
-//                                itemConstraint.getPropertyName().equals(accommodation.getType()) &&
-//                                itemConstraint.getPropertyValue().equals(accommodation.getCode()))
-//                        .map(itemConstraint -> accommodation))
-//                .collect(Collectors.toSet());
+        Set<ExamAccommodation> excludedAccommodations = allAccommodations.stream()
+                .flatMap(accommodation -> itemConstraints.stream()
+                        .filter(itemConstraint -> !itemConstraint.isInclusive() &&
+                                itemConstraint.getPropertyName().equals(accommodation.getType()) &&
+                                itemConstraint.getPropertyValue().equals(accommodation.getCode()))
+                        .map(itemConstraint -> accommodation))
+                .collect(Collectors.toSet());
 
         // For the included accommodations above, find the list of compatible item ids
         Set<String> itemPoolIds = itemProperties.stream()
@@ -143,26 +153,32 @@ public class SegmentPoolServiceImpl implements SegmentPoolService {
 
         //TODO: filter out exclusions and perhaps remove intermediary steps
 
-        Set<Item> itemPool = items.stream().
-                filter(item -> itemPoolIds.contains(item.getId()))
+        Set<Item> itemPool = items.stream()
+                .filter(item -> itemPoolIds.contains(item.getId()))
                 .collect(Collectors.toSet());
+
         return itemPool;
     }
 
+    /**
+     * Private class to represent grouping of segment blueprint metadata
+     */
     private class SegmentBluePrint {
         private String strand;
         private int minItems;
-        private int maxItems;
-        private long poolCount;
+        private int poolCount;
 
-        public SegmentBluePrint(String strand, int minItems, int maxItems, long poolCount) {
+        public SegmentBluePrint(String strand, int minItems, int poolCount) {
             this.strand = strand;
             this.minItems = minItems;
-            this.maxItems = maxItems;
             this.poolCount = poolCount;
         }
 
-        public long getPoolCount() {
+        public String getStrand() {
+            return this.strand;
+        }
+
+        public int getPoolCount() {
             return this.poolCount;
         }
 

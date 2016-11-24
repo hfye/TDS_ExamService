@@ -16,7 +16,7 @@ public class SegmentPoolInfo {
         this.itemPoolIds = builder.itemPoolIds;
     }
 
-    public long getNewLength() {
+    public long getLength() {
         return length;
     }
 

@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import tds.assessment.Algorithm;
 import tds.assessment.Assessment;
 import tds.assessment.Segment;
 import tds.exam.ExamAccommodation;
@@ -18,8 +20,10 @@ import tds.exam.services.ExamSegmentService;
 import tds.exam.services.SegmentPoolService;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -74,7 +78,7 @@ public class ExamSegmentServiceImpl implements ExamSegmentService {
         // For each segment, keep track of segmentPosition (1-based)
         for (ExamSegment examSegment : initializedExamSegments) {
             boolean isSatisfied = false;
-            List<String> items = new ArrayList<>();
+            Set<String> items = new HashSet<>();
             int fieldTestItemCount = 0;
             int itemPoolCount;
             // This flag is to ensure that the resulting ExamSegments contain more than zero items.\
@@ -83,8 +87,7 @@ public class ExamSegmentServiceImpl implements ExamSegmentService {
                 segment. This is done in case the minimumSegmentPosition is not found in the temp table they create.
                 That can never happen with our data structure, as it is always 1-based segment positioning.
              */
-            //TODO: create Algorithm enum
-            if (examSegment.getAlgorithm().equals("fixedform")) {
+            if (examSegment.getAlgorithm().equals(Algorithm.FIXED_FORM.getType())) {
                 FormInfo formInfo = selectTestForm(exam.getId(), assessment.getKey(), languageCode, formKeys, maybeFormCohort);
 
                 if (formInfo.getFormLength() == null) { //TODO: should this be == 0?
@@ -97,20 +100,20 @@ public class ExamSegmentServiceImpl implements ExamSegmentService {
                     maybeFormCohort = getFormCohort(examSegment, assessment);
                 }
             } else { // Algorithm is adaptive2
-                SegmentPoolInfo segmentPoolInfo = segmentPoolService.computeSegmentPool(exam,
+                SegmentPoolInfo segmentPoolInfo = segmentPoolService.computeSegmentPool(exam.getId(),
                         assessment.getSegment(examSegment.getAssessmentSegmentKey()), assessment.getItemConstraints());
                 boolean isEligible = true; //TODO: FT_IsEligible_FN
                 fieldTestItemCount = 0;
-                items = segmentPoolInfo.getItems();
+                items = segmentPoolInfo.getItemPoolIds();
                 itemPoolCount = segmentPoolInfo.getItemPoolCount();
 
-                if (isEligible && segmentPoolInfo.getNewLength() == examSegment.getExamItemCount()) {
+                if (isEligible && segmentPoolInfo.getLength() == examSegment.getExamItemCount()) {
 //                     TODO: implement FT_SelectItemGroups
 //                    fieldTestItemCount = selectFieldTestItemGroups(exam.getId(), assessment.getKey(),
 //                              examSegment.getSegmentPosition(), examSegment.getAssessmentSegmentId());
                 }
 
-                if (segmentPoolInfo.getNewLength() != null && fieldTestItemCount + segmentPoolInfo.getNewLength() == 0) {
+                if (fieldTestItemCount + segmentPoolInfo.getLength() == 0) {
                     isSatisfied = true;
                 }
             }
@@ -184,7 +187,7 @@ public class ExamSegmentServiceImpl implements ExamSegmentService {
                     .withAssessmentSegmentKey(assessmentSegment.getKey())
                     .withAssessmentSegmentId(assessmentSegment.getSegmentId())
                     .withSegmentPosition(assessmentSegment.getPosition())
-                    .withAlgorithm(assessmentSegment.getSelectionAlgorithm())
+                    .withAlgorithm(assessmentSegment.getSelectionAlgorithm().getType())
                     .withExamItemCount(assessment.getSegments().get(0).getMaxItems())
                     .withIsPermeable(false)
                     .withIsSatisfied(false)
@@ -196,7 +199,7 @@ public class ExamSegmentServiceImpl implements ExamSegmentService {
                 .withAssessmentSegmentKey(assessment.getKey())
                 .withAssessmentSegmentId(assessment.getAssessmentId())
                 .withSegmentPosition(assessment.getSegments().get(0).getPosition())
-                .withAlgorithm(assessment.getSelectionAlgorithm())
+                .withAlgorithm(assessment.getSelectionAlgorithm().toString())
                 .withExamItemCount(assessment.getSegments().get(0).getMaxItems())
                 .withIsPermeable(false)
                 .withIsSatisfied(false)
