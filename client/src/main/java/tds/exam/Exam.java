@@ -32,6 +32,9 @@ public class Exam {
     private String assessmentKey;
     private String environment;
     private boolean segmented;
+    private int abnormalStarts;
+    private boolean waitingForSegmentApproval;
+    private int currentSegmentPosition;
 
     public static class Builder {
         private UUID id;
@@ -40,7 +43,7 @@ public class Exam {
         private String assessmentId;
         private long studentId;
         private int attempts;
-        private ExamStatusCode status = new ExamStatusCode.Builder().build();
+        private ExamStatusCode status;
         private String statusChangeReason;
         private String clientName;
         private String subject;
@@ -58,6 +61,10 @@ public class Exam {
         private String assessmentKey;
         private String environment;
         private boolean segmented;
+        private int abnormalStarts;
+        private boolean waitingForSegmentApproval;
+        private int currentSegmentPosition;
+
 
         public Builder withSegmented(boolean segmented) {
             this.segmented = segmented;
@@ -129,7 +136,7 @@ public class Exam {
             return this;
         }
 
-        public Builder withStatus(ExamStatusCode newStatus){
+        public Builder withStatus(ExamStatusCode newStatus) {
             status = newStatus;
             return this;
         }
@@ -179,6 +186,52 @@ public class Exam {
             return this;
         }
 
+        public Builder withAbnormalStarts(int abnormalStarts) {
+            this.abnormalStarts = abnormalStarts;
+            return this;
+        }
+
+        public Builder withWaitingForSegmentApproval(boolean waitingForSegmentApproval) {
+            this.waitingForSegmentApproval = waitingForSegmentApproval;
+            return this;
+        }
+
+        public Builder withCurrentSegmentPosition(int currentSegmentPosition) {
+            this.currentSegmentPosition = currentSegmentPosition;
+            return this;
+        }
+
+        public Builder fromExam(Exam exam) {
+            id = exam.id;
+            sessionId = exam.sessionId;
+            browserId = exam.browserId;
+            assessmentId = exam.assessmentId;
+            studentId = exam.studentId;
+            attempts = exam.attempts;
+            status = exam.status;
+            statusChangeReason = exam.statusChangeReason;
+            subject = exam.subject;
+            clientName = exam.clientName;
+            dateStarted = exam.dateStarted;
+            dateChanged = exam.dateChanged;
+            dateDeleted = exam.dateDeleted;
+            dateScored = exam.dateScored;
+            createdAt = exam.createdAt;
+            dateCompleted = exam.dateCompleted;
+            loginSSID = exam.loginSSID;
+            studentName = exam.studentName;
+            dateJoined = exam.dateJoined;
+            assessmentWindowId = exam.assessmentWindowId;
+            assessmentAlgorithm = exam.assessmentAlgorithm;
+            assessmentKey = exam.assessmentKey;
+            environment = exam.environment;
+            segmented = exam.segmented;
+            abnormalStarts = exam.abnormalStarts;
+            waitingForSegmentApproval = exam.waitingForSegmentApproval;
+            currentSegmentPosition = exam.currentSegmentPosition;
+            return this;
+        }
+
         public Exam build() {
             return new Exam(this);
         }
@@ -209,6 +262,9 @@ public class Exam {
         assessmentKey = builder.assessmentKey;
         environment = builder.environment;
         segmented = builder.segmented;
+        abnormalStarts = builder.abnormalStarts;
+        waitingForSegmentApproval = builder.waitingForSegmentApproval;
+        currentSegmentPosition = builder.currentSegmentPosition;
     }
 
     /**
@@ -228,7 +284,7 @@ public class Exam {
     /**
      * @return The identifier of the browser of the browser information for thie eaxm
      * <p>
-     *     "Browser information" refers to IP address, user-agent etc, from another table.
+     * "Browser information" refers to IP address, user-agent etc, from another table.
      * </p>
      */
     public UUID getBrowserId() {
@@ -266,7 +322,7 @@ public class Exam {
     /**
      * @return Text describing the reason for the most recent status change.
      * <p>
-     *     Sources for this value include restarting an exam or when a Proctor denies approval to start an exam.
+     * Sources for this value include restarting an exam or when a Proctor denies approval to start an exam.
      * </p>
      */
     public String getStatusChangeReason() {
@@ -384,5 +440,27 @@ public class Exam {
      */
     public boolean isSegmented() {
         return segmented;
+    }
+
+    /**
+     * @return the number of times an exam was started under abnormal instances.  For example,
+     * restarting an exam that was already in the process of being started.
+     */
+    public int getAbnormalStarts() {
+        return abnormalStarts;
+    }
+
+    /**
+     * @return {@code true} when approval is required before the student can move onto the next segment
+     */
+    public boolean isWaitingForSegmentApproval() {
+        return waitingForSegmentApproval;
+    }
+
+    /**
+     * @return the current segment position in multi segmented exams
+     */
+    public int getCurrentSegmentPosition() {
+        return currentSegmentPosition;
     }
 }

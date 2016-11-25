@@ -21,6 +21,7 @@ import tds.common.data.mapping.ResultSetMapperUtility;
 import tds.common.data.mysql.UuidAdapter;
 import tds.exam.Exam;
 import tds.exam.ExamStatusCode;
+import tds.exam.ExamStatusStage;
 import tds.exam.models.Ability;
 import tds.exam.repositories.ExamQueryRepository;
 
@@ -42,7 +43,7 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
         String querySQL = "SELECT \n" +
             "   e.id, \n" +
             "   e.session_id, \n" +
-            "   e.browser_id, \n" +
+            "   ee.browser_id, \n" +
             "   e.assessment_id, \n" +
             "   e.student_id, \n" +
             "   e.client_name, \n" +
@@ -50,7 +51,7 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
             "   e.subject,    \n" +
             "   e.login_ssid,\n" +
             "   e.student_name,\n" +
-            "   e.date_started,    \n" +
+            "   e.date_joined, \n" +
             "   e.assessment_key,\n" +
             "   e.assessment_window_id,\n" +
             "   e.assessment_algorithm,\n" +
@@ -61,8 +62,11 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
             "   ee.date_deleted, \n" +
             "   ee.date_changed, \n" +
             "   ee.date_completed, \n" +
-            "   ee.date_joined, \n" +
+            "   ee.date_started,    \n" +
             "   ee.date_scored, \n" +
+            "   ee.abnormal_starts, \n" +
+            "   ee.waiting_for_segment_approval, \n" +
+            "   ee.current_segment_position, \n" +
             "   e.created_at, \n" +
             "   esc.description, \n" +
             "   esc.status, \n" +
@@ -105,55 +109,58 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
 
         String query =
             "SELECT " +
-            "   e.id, \n" +
-            "   e.session_id, \n" +
-            "   e.browser_id, \n" +
-            "   e.assessment_id, \n" +
-            "   e.student_id, \n" +
-            "   e.client_name, \n" +
-            "   e.environment,\n" +
-            "   e.subject,    \n" +
-            "   e.login_ssid,\n" +
-            "   e.student_name,\n" +
-            "   e.date_started,    \n" +
-            "   e.assessment_key,\n" +
-            "   e.assessment_window_id,\n" +
-            "   e.assessment_algorithm,\n" +
-            "   e.segmented,\n" +
-            "   ee.attempts, \n" +
-            "   ee.status, \n" +
-            "   ee.status_change_reason, \n" +
-            "   ee.date_deleted, \n" +
-            "   ee.date_changed, \n" +
-            "   ee.date_completed, \n" +
-            "   ee.date_joined, \n" +
-            "   ee.date_scored, \n" +
-            "   e.created_at, \n" +
-            "   esc.description, \n" +
-            "   esc.status, \n" +
-            "   esc.stage\n" +
-            "FROM exam.exam e\n" +
-            "JOIN ( \n" +
-            "   SELECT \n" +
-            "       exam_id, \n" +
-            "       MAX(id) AS id \n" +
-            "   FROM \n" +
-            "       exam.exam_event \n" +
-            "   WHERE date_deleted IS NULL \n" +
-            "   GROUP BY exam_id \n" +
-            ") last_event \n" +
-            "  ON e.id = last_event.exam_id \n" +
-            "JOIN exam.exam_event ee \n" +
-            "  ON last_event.exam_id = ee.exam_id AND \n" +
-            "     last_event.id = ee.id \n" +
-            "JOIN exam.exam_status_codes esc \n" +
-            "  ON esc.status = ee.status \n" +
-            "WHERE \n" +
-            "   e.student_id = :studentId \n" +
-            "   AND e.assessment_id = :assessmentId \n" +
-            "   AND e.client_name = :clientName \n" +
-            "ORDER BY \n" +
-            "   e.created_at DESC";
+                "   e.id, \n" +
+                "   e.session_id, \n" +
+                "   ee.browser_id, \n" +
+                "   e.assessment_id, \n" +
+                "   e.student_id, \n" +
+                "   e.client_name, \n" +
+                "   e.environment,\n" +
+                "   e.subject,    \n" +
+                "   e.login_ssid,\n" +
+                "   e.student_name,\n" +
+                "   e.assessment_key,\n" +
+                "   e.date_joined, \n" +
+                "   e.assessment_window_id,\n" +
+                "   e.assessment_algorithm,\n" +
+                "   e.segmented,\n" +
+                "   ee.attempts, \n" +
+                "   ee.status, \n" +
+                "   ee.status_change_reason, \n" +
+                "   ee.date_deleted, \n" +
+                "   ee.date_changed, \n" +
+                "   ee.date_completed, \n" +
+                "   ee.date_started,    \n" +
+                "   ee.date_scored, \n" +
+                "   ee.abnormal_starts, \n" +
+                "   ee.current_segment_position, \n" +
+                "   ee.waiting_for_segment_approval, \n" +
+                "   e.created_at, \n" +
+                "   esc.description, \n" +
+                "   esc.status, \n" +
+                "   esc.stage\n" +
+                "FROM exam.exam e\n" +
+                "JOIN ( \n" +
+                "   SELECT \n" +
+                "       exam_id, \n" +
+                "       MAX(id) AS id \n" +
+                "   FROM \n" +
+                "       exam.exam_event \n" +
+                "   WHERE date_deleted IS NULL \n" +
+                "   GROUP BY exam_id \n" +
+                ") last_event \n" +
+                "  ON e.id = last_event.exam_id \n" +
+                "JOIN exam.exam_event ee \n" +
+                "  ON last_event.exam_id = ee.exam_id AND \n" +
+                "     last_event.id = ee.id \n" +
+                "JOIN exam.exam_status_codes esc \n" +
+                "  ON esc.status = ee.status \n" +
+                "WHERE \n" +
+                "   e.student_id = :studentId \n" +
+                "   AND e.assessment_id = :assessmentId \n" +
+                "   AND e.client_name = :clientName \n" +
+                "ORDER BY \n" +
+                "   e.created_at DESC";
 
         Optional<Exam> examOptional;
         try {
@@ -180,26 +187,26 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
                 "ee.attempts,\n" +
                 "ee.date_scored,\n" +
                 "exam_scores.value AS score\n" +
-            "FROM exam exam \n" +
-            "JOIN ( \n" +
-            "   SELECT \n" +
-            "       exam_id, \n" +
-            "       MAX(id) AS id \n" +
-            "   FROM \n" +
-            "       exam.exam_event \n" +
-            "   GROUP BY exam_id \n" +
-            ") last_event \n" +
-            "  ON exam.id = last_event.exam_id \n" +
-            "JOIN exam.exam_event ee \n" +
-            "  ON last_event.exam_id = ee.exam_id AND \n" +
-            "     last_event.id = ee.id \n" +
-            "JOIN exam.exam_status_codes esc \n" +
-            "  ON esc.status = ee.status \n" +
-            "INNER JOIN \n" +
+                "FROM exam exam \n" +
+                "JOIN ( \n" +
+                "   SELECT \n" +
+                "       exam_id, \n" +
+                "       MAX(id) AS id \n" +
+                "   FROM \n" +
+                "       exam.exam_event \n" +
+                "   GROUP BY exam_id \n" +
+                ") last_event \n" +
+                "  ON exam.id = last_event.exam_id \n" +
+                "JOIN exam.exam_event ee \n" +
+                "  ON last_event.exam_id = ee.exam_id AND \n" +
+                "     last_event.id = ee.id \n" +
+                "JOIN exam.exam_status_codes esc \n" +
+                "  ON esc.status = ee.status \n" +
+                "INNER JOIN \n" +
                 "exam_scores \n" +
-            "ON \n" +
+                "ON \n" +
                 "exam.id = exam_scores.exam_id \n" +
-            "WHERE\n" +
+                "WHERE\n" +
                 "exam.client_name = :clientName AND\n" +
                 "exam.student_id = :studentId AND\n" +
                 "exam.subject = :subject AND\n" +
@@ -208,7 +215,7 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
                 "exam.id <> :examId AND\n" +
                 "exam_scores.use_for_ability = 1 AND\n" +
                 "exam_scores.value IS NOT NULL \n" +
-            "ORDER BY ee.date_scored DESC";
+                "ORDER BY ee.date_scored DESC";
 
         return jdbcTemplate.query(SQL, parameters, new AbilityRowMapper());
     }
@@ -217,11 +224,11 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
         @Override
         public Ability mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new Ability(
-                    UuidAdapter.getUUIDFromBytes(rs.getBytes("id")),
-                    rs.getString("assessment_id"),
-                    rs.getInt("attempts"),
-                    ResultSetMapperUtility.mapTimestampToInstant(rs, "date_scored"),
-                    rs.getDouble("score")
+                UuidAdapter.getUUIDFromBytes(rs.getBytes("id")),
+                rs.getString("assessment_id"),
+                rs.getInt("attempts"),
+                ResultSetMapperUtility.mapTimestampToInstant(rs, "date_scored"),
+                rs.getDouble("score")
             );
         }
     }
@@ -251,12 +258,14 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
                 .withDateCompleted(mapTimestampToJodaInstant(rs, "date_completed"))
                 .withCreatedAt(mapTimestampToJodaInstant(rs, "created_at"))
                 .withDateJoined(mapTimestampToJodaInstant(rs, "date_joined"))
-                .withStatus(new ExamStatusCode.Builder()
-                    .withStatus(rs.getString("status"))
-                    .withDescription(rs.getString("description"))
-                    .withStage(rs.getString("stage"))
-                    .build())
+                .withStatus(new ExamStatusCode(
+                    rs.getString("status"),
+                    ExamStatusStage.fromType(rs.getString("stage"))
+                ))
                 .withStatusChangeReason(rs.getString("status_change_reason"))
+                .withAbnormalStarts(rs.getInt("abnormal_starts"))
+                .withWaitingForSegmentApproval(rs.getBoolean("waiting_for_segment_approval"))
+                .withCurrentSegmentPosition(rs.getInt("current_segment_position"))
                 .build();
         }
     }

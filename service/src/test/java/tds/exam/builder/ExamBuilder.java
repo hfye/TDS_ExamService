@@ -6,6 +6,9 @@ import java.util.UUID;
 
 import tds.exam.Exam;
 import tds.exam.ExamStatusCode;
+import tds.exam.ExamStatusStage;
+
+import static tds.exam.ExamStatusCode.STATUS_PENDING;
 
 /**
  * Build an {@link Exam} populated with test data.
@@ -23,10 +26,7 @@ public class ExamBuilder {
     private Instant dateChanged = null;
     private Instant dateStarted = null;
     private Instant dateCompleted = null;
-    private ExamStatusCode status = new ExamStatusCode.Builder()
-        .withStage(ExamStatusCode.STAGE_INUSE)
-        .withStatus("pending")
-        .build();
+    private ExamStatusCode status = new ExamStatusCode(STATUS_PENDING, ExamStatusStage.INUSE);
     private String subject = "ELA";
     private String studentKey = "ADV001";
     private String studentName = "Darth";
@@ -36,6 +36,9 @@ public class ExamBuilder {
     private String assessmentKey = "(SBAC_PT)SBAC-IRP-CAT-ELA-3-Summer-2015-2016";
     private String environment = "Development";
     private boolean segmented = false;
+    private int abnormalStarts = 1;
+    private boolean waitingForSegmentApproval = false;
+    private int currentSegmentPosition = 1;
 
     public Exam build() {
         return new Exam.Builder()
@@ -61,6 +64,9 @@ public class ExamBuilder {
             .withAssessmentKey(assessmentKey)
             .withEnvironment(environment)
             .withSegmented(segmented)
+            .withAbnormalStarts(abnormalStarts)
+            .withWaitingForSegmentApproval(waitingForSegmentApproval)
+            .withCurrentSegmentPosition(currentSegmentPosition)
             .build();
     }
 
@@ -171,6 +177,21 @@ public class ExamBuilder {
 
     public ExamBuilder withSubject(String subject) {
         this.subject = subject;
+        return this;
+    }
+
+    public ExamBuilder withAbnormalStarts(int abnormalStarts) {
+        this.abnormalStarts = abnormalStarts;
+        return this;
+    }
+
+    public ExamBuilder withWaitingForSegmentApproval(boolean waitingForSegmentApproval) {
+        this.waitingForSegmentApproval = waitingForSegmentApproval;
+        return this;
+    }
+
+    public ExamBuilder withCurrentSegmentPosition(int currentSegmentPosition) {
+        this.currentSegmentPosition = currentSegmentPosition;
         return this;
     }
 }
