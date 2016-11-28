@@ -63,18 +63,18 @@ public class ExamAccommodationQueryRepositoryImpl implements ExamAccommodationQu
 
         final String SQL =
                 "SELECT \n" +
-                        "   id, \n" +
-                        "   exam_id, \n" +
-                        "   segment_id, \n" +
-                        "   `type`, \n" +
-                        "   code, \n" +
-                        "   description, \n" +
-                        "   denied_at, \n" +
-                        "   created_at \n" +
-                        "FROM \n" +
-                        "   exam_accommodations \n" +
-                        "WHERE \n" +
-                        "   exam_id = :examId";
+                "   id, \n" +
+                "   exam_id, \n" +
+                "   segment_id, \n" +
+                "   `type`, \n" +
+                "   code, \n" +
+                "   description, \n" +
+                "   denied_at, \n" +
+                "   created_at \n" +
+                "FROM \n" +
+                "   exam_accommodations \n" +
+                "WHERE \n" +
+                "   exam_id = :examId";
 
         return jdbcTemplate.query(SQL,
                 parameters,

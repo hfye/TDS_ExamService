@@ -42,5 +42,4 @@ class AssessmentServiceImpl implements AssessmentService {
 
         return maybeAssessment;
     }
-
 }
