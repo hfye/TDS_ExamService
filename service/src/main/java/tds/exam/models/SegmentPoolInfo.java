@@ -16,19 +16,28 @@ public class SegmentPoolInfo {
         this.itemPoolIds = builder.itemPoolIds;
     }
 
+    /**
+     * @return the length (number of items to be selected) for the exam segment
+     */
     public long getLength() {
         return length;
     }
 
+    /**
+     * @return the sum of all strands available in the segment pool
+     */
     public int getItemPoolCount() {
         return poolCount;
     }
 
+    /**
+     * @return the list of eligible {@link tds.assessment.Item}'s ids for the segment pool
+     */
     public Set<String> getItemPoolIds() {
         return itemPoolIds;
     }
 
-    public static final class Builder {
+    public static class Builder {
         private int length;
         private int poolCount;
         private Set<String> itemPoolIds;

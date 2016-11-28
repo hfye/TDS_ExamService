@@ -10,23 +10,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Predicate;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import tds.assessment.Algorithm;
-import tds.assessment.Assessment;
 import tds.assessment.Item;
 import tds.assessment.ItemConstraint;
-import tds.assessment.ItemProperty;
 import tds.assessment.Segment;
 import tds.assessment.Strand;
-import tds.common.data.legacy.LegacyComparer;
-import tds.exam.Exam;
-import tds.exam.ExamAccommodation;
 import tds.exam.models.SegmentPoolInfo;
-import tds.exam.services.AssessmentService;
-import tds.exam.services.ExamAccommodationService;
 import tds.exam.services.ItemPoolService;
 import tds.exam.services.SegmentPoolService;
 
