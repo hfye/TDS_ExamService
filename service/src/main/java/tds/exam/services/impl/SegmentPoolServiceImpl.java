@@ -27,25 +27,23 @@ import tds.exam.ExamAccommodation;
 import tds.exam.models.SegmentPoolInfo;
 import tds.exam.services.AssessmentService;
 import tds.exam.services.ExamAccommodationService;
+import tds.exam.services.ItemPoolService;
 import tds.exam.services.SegmentPoolService;
 
-/**
- * Created by emunoz on 11/7/16.
- */
 @Service
 public class SegmentPoolServiceImpl implements SegmentPoolService {
     private static final Logger LOG = LoggerFactory.getLogger(SegmentPoolServiceImpl.class);
-    private ExamAccommodationService examAccommodationService;
+    private ItemPoolService itemPoolService;
 
     @Autowired
-    public SegmentPoolServiceImpl(ExamAccommodationService examAccommodationService) {
-        this.examAccommodationService = examAccommodationService;
+    public SegmentPoolServiceImpl(ItemPoolService itemPoolService) {
+        this.itemPoolService = itemPoolService;
     }
 
     @Override
     public SegmentPoolInfo computeSegmentPool(UUID examId, Segment segment, List<ItemConstraint> itemConstraints) {
         // Get the list of eligible items based on constraints and exam accommodations
-        Set<Item> itemPool = getItemPool(examId, itemConstraints, segment.getItems());
+        Set<Item> itemPool = itemPoolService.getItemPool(examId, itemConstraints, segment.getItems());
         /* getItemPool selects the items that are eligible for the segment pool we are constructing.
            In legacy code, we can skip a lot of the temp-table initialization logic because of this */
         Set<Strand> strands = segment.getStrands();
@@ -108,56 +106,6 @@ public class SegmentPoolServiceImpl implements SegmentPoolService {
                 .withPoolCount(strandCount)
                 .withLength(newLength)
                 .build();
-    }
-
-    /*
-        This method is meant to replace StudentDLL._AA_ItempoolString_FNOptimized() [1643]
-        The purpose of this method is to find the list of items to include in the segment by taking the following steps:
-
-        1. Retrieve the accommodations that the student has enabled
-        2. Find the matching set of (inclusive) item constraints - typically this is "Language"
-        3. Find the set of items that satisfy/match the inclusive item constraints
-        4. Exclude the items that match the "excluded" accommodations (based on constraints)
-     */
-    public Set<Item> getItemPool(UUID examId, List<ItemConstraint> itemConstraints, List<Item> items) {
-        List<ExamAccommodation> allAccommodations = examAccommodationService.findAllAccommodations(examId);
-        List<ItemProperty> itemProperties = items.stream()
-                .flatMap(item -> item.getItemProperties().stream())
-                .collect(Collectors.toList());
-
-        // First, get all the constraints for our exam accommodations marked as "inclusive"
-        Set<ExamAccommodation> includedAccommodations = allAccommodations.stream()
-            .flatMap(accommodation -> itemConstraints.stream()
-                .filter(itemConstraint -> itemConstraint.isInclusive() &&
-                        itemConstraint.getPropertyName().equals(accommodation.getType()) &&
-                        itemConstraint.getPropertyValue().equals(accommodation.getCode()))
-                .map(itemConstraint -> accommodation))
-            .collect(Collectors.toSet());
-
-        Set<ExamAccommodation> excludedAccommodations = allAccommodations.stream()
-                .flatMap(accommodation -> itemConstraints.stream()
-                        .filter(itemConstraint -> !itemConstraint.isInclusive() &&
-                                itemConstraint.getPropertyName().equals(accommodation.getType()) &&
-                                itemConstraint.getPropertyValue().equals(accommodation.getCode()))
-                        .map(itemConstraint -> accommodation))
-                .collect(Collectors.toSet());
-
-        // For the included accommodations above, find the list of compatible item ids
-        Set<String> itemPoolIds = itemProperties.stream()
-                .flatMap(itemProperty -> includedAccommodations.stream()
-                        .filter(accommodation ->
-                                itemProperty.getName().equals(accommodation.getType()) &&
-                                itemProperty.getValue().equals(accommodation.getCode()))
-                        .map(accommodation -> itemProperty.getItemId()))
-                .collect(Collectors.toSet());
-
-        //TODO: filter out exclusions and perhaps remove intermediary steps
-
-        Set<Item> itemPool = items.stream()
-                .filter(item -> itemPoolIds.contains(item.getId()))
-                .collect(Collectors.toSet());
-
-        return itemPool;
     }
 
     /**

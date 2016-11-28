@@ -11,11 +11,12 @@ import tds.exam.Exam;
 import tds.exam.models.SegmentPoolInfo;
 
 /**
- * Created by emunoz on 11/7/16.
+ * Service responsible for selecting segment items and gathering segment pool information.
  */
 public interface SegmentPoolService {
+
     /**
-     *
+     *  A {@link tds.exam.models.SegmentPoolInfo} object containing metadata about the selected segment pool.
      *
      * @param examId        The id of the {@link Exam}
      * @param segment       The segment being constructed
