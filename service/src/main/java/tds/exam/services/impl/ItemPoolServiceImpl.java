@@ -1,6 +1,7 @@
 package tds.exam.services.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Set;
@@ -14,7 +15,7 @@ import tds.exam.ExamAccommodation;
 import tds.exam.services.ExamAccommodationService;
 import tds.exam.services.ItemPoolService;
 
-
+@Service
 public class ItemPoolServiceImpl implements ItemPoolService {
     private ExamAccommodationService examAccommodationService;
 
