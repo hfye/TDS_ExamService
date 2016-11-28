@@ -1,6 +1,5 @@
 package tds.exam.models;
 
-
 import tds.exam.Exam;
 
 import java.time.Instant;

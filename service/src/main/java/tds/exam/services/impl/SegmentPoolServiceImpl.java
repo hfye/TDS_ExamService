@@ -41,7 +41,8 @@ public class SegmentPoolServiceImpl implements SegmentPoolService {
     }
 
     @Override
-    public SegmentPoolInfo computeSegmentPool(UUID examId, Segment segment, List<ItemConstraint> itemConstraints) {
+    public SegmentPoolInfo computeSegmentPool(final UUID examId, final Segment segment,
+                                              final List<ItemConstraint> itemConstraints) {
         // Get the list of eligible items based on constraints and exam accommodations
         Set<Item> itemPool = itemPoolService.getItemPool(examId, itemConstraints, segment.getItems());
         /* getItemPool selects the items that are eligible for the segment pool we are constructing.
@@ -109,7 +110,7 @@ public class SegmentPoolServiceImpl implements SegmentPoolService {
     }
 
     /**
-     * Private class to represent grouping of segment blueprint metadata
+     * Class to represent grouping of segment blueprint metadata
      */
     private class SegmentBluePrint {
         private String strand;
