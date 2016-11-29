@@ -48,7 +48,7 @@ public class AssessmentServiceImplTest {
         assessment.setKey("key");
         assessment.setAssessmentId("assessmentId");
         assessment.setSegments(segments);
-        assessment.setSelectionAlgorithm(Algorithm.FIXED_FORM.VIRTUAL);
+        assessment.setSelectionAlgorithm(Algorithm.VIRTUAL);
         assessment.setStartAbility(100);
 
         when(restTemplate.getForObject("http://localhost:8080/assessments/key", Assessment.class)).thenReturn(assessment);

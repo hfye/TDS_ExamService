@@ -23,4 +23,9 @@ class ExamAccommodationServiceImpl implements ExamAccommodationService {
     public List<ExamAccommodation> findAccommodations(UUID examId, String segmentId, String[] accommodationTypes) {
         return examAccommodationQueryRepository.findAccommodations(examId, segmentId, accommodationTypes);
     }
+
+    @Override
+    public List<ExamAccommodation> findAllAccommodations(UUID examId) {
+        return examAccommodationQueryRepository.findAccommodations(examId);
+    }
 }
