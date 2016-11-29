@@ -13,5 +13,12 @@ public interface ExamAccommodationCommandRepository {
      *
      * @param accommodations list of {@link tds.exam.ExamAccommodation} to insert
      */
-    void insertAccommodations(List<ExamAccommodation> accommodations);
+    void insert(List<ExamAccommodation> accommodations);
+
+    /**
+     * Updates the exam accommodations for the exam
+     *
+     * @param accommodation {@link tds.exam.ExamAccommodation} to update
+     */
+    void update(ExamAccommodation accommodation);
 }

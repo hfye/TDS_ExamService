@@ -37,24 +37,72 @@ public class ExamAccommodationQueryRepositoryImpl implements ExamAccommodationQu
 
         final String SQL =
             "SELECT \n" +
-            "   id, \n" +
-            "   exam_id, \n" +
-            "   segment_key, \n" +
-            "   `type`, \n" +
-            "   code, \n" +
-            "   description, \n" +
-            "   denied_at, \n" +
-            "   created_at \n" +
+            "   ea.id, \n" +
+            "   ea.exam_id, \n" +
+            "   ea.segment_key, \n" +
+            "   ea.`type`, \n" +
+            "   ea.code, \n" +
+            "   ea.description, \n" +
+            "   eae.denied_at, \n" +
+            "   ea.created_at \n" +
             "FROM \n" +
-            "   exam_accommodations \n" +
+            "   exam_accommodation ea \n" +
+            "JOIN ( \n" +
+            "   SELECT \n" +
+            "       exam_accommodation_id, \n" +
+            "       MAX(id) AS id \n" +
+            "   FROM \n" +
+            "       exam_accommodation_event \n" +
+            "   GROUP BY exam_accommodation_id \n" +
+            ") last_event \n" +
+            "  ON ea.id = last_event.exam_accommodation_id \n" +
+            "JOIN exam_accommodation_event eae \n" +
+            "  ON last_event.id = eae.id \n" +
             "WHERE \n" +
-            "   exam_id = :examId \n" +
-            "   AND segment_key = :segmentKey \n" +
-            "   AND `type` IN (:accommodationTypes)";
+            "   ea.exam_id = :examId \n" +
+            "   AND ea.segment_key = :segmentKey \n" +
+            "   AND ea.`type` IN (:accommodationTypes)" +
+            "   AND eae.deleted_at IS NULL";
 
         return jdbcTemplate.query(SQL,
                 parameters,
                 new AccommodationRowMapper());
+    }
+
+    @Override
+    public List<ExamAccommodation> findAccommodations(UUID examId) {
+        final SqlParameterSource parameters = new MapSqlParameterSource("examId", UuidAdapter.getBytesFromUUID(examId));
+
+        final String SQL =
+            "SELECT \n" +
+                "   ea.id, \n" +
+                "   ea.exam_id, \n" +
+                "   ea.segment_key, \n" +
+                "   ea.`type`, \n" +
+                "   ea.code, \n" +
+                "   ea.description, \n" +
+                "   eae.denied_at, \n" +
+                "   ea.created_at \n" +
+                "FROM \n" +
+                "   exam_accommodation ea \n" +
+                "JOIN ( \n" +
+                "   SELECT \n" +
+                "       exam_accommodation_id, \n" +
+                "       MAX(id) AS id \n" +
+                "   FROM \n" +
+                "       exam_accommodation_event \n" +
+                "   GROUP BY exam_accommodation_id \n" +
+                ") last_event \n" +
+                "  ON ea.id = last_event.exam_accommodation_id \n" +
+                "JOIN exam_accommodation_event eae \n" +
+                "  ON last_event.id = eae.id \n" +
+                "WHERE \n" +
+                "   ea.exam_id = :examId" +
+                "   AND eae.deleted_at IS NULL;";
+
+        return jdbcTemplate.query(SQL,
+            parameters,
+            new AccommodationRowMapper());
     }
 
     private class AccommodationRowMapper implements RowMapper<ExamAccommodation> {
