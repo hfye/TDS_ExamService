@@ -17,7 +17,7 @@ import tds.exam.services.ItemPoolService;
 
 @Service
 public class ItemPoolServiceImpl implements ItemPoolService {
-    private ExamAccommodationService examAccommodationService;
+    private final ExamAccommodationService examAccommodationService;
 
     @Autowired
     public ItemPoolServiceImpl(ExamAccommodationService examAccommodationService) {

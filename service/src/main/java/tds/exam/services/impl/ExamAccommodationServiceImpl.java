@@ -26,6 +26,6 @@ class ExamAccommodationServiceImpl implements ExamAccommodationService {
 
     @Override
     public List<ExamAccommodation> findAllAccommodations(UUID examId) {
-        return examAccommodationQueryRepository.findAllAccommodations(examId);
+        return examAccommodationQueryRepository.findAccommodations(examId);
     }
 }

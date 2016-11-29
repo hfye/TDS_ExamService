@@ -6,7 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -24,7 +26,7 @@ import tds.exam.services.SegmentPoolService;
 @Service
 public class SegmentPoolServiceImpl implements SegmentPoolService {
     private static final Logger LOG = LoggerFactory.getLogger(SegmentPoolServiceImpl.class);
-    private ItemPoolService itemPoolService;
+    private final ItemPoolService itemPoolService;
 
     @Autowired
     public SegmentPoolServiceImpl(ItemPoolService itemPoolService) {
@@ -39,7 +41,10 @@ public class SegmentPoolServiceImpl implements SegmentPoolService {
         /* getItemPool selects the items that are eligible for the segment pool we are constructing.
            In legacy code, we can skip a lot of the temp-table initialization logic because of this */
         Set<Strand> strands = segment.getStrands();
-        List<SegmentBluePrint> segmentBluePrints = new ArrayList<>();
+        int shortfall = 0;
+        int strandCount = 0;
+        // This map wil be used to cache values for strandcounts
+        Map<String, Integer> strandCountMap = new HashMap<>();
 
         for (Item item : itemPool) {
             // Find items with matching strands and non-null adaptiveCut value
@@ -51,21 +56,27 @@ public class SegmentPoolServiceImpl implements SegmentPoolService {
 
             if (maybeItemStrand.isPresent()) {
                 Strand itemStrand = maybeItemStrand.get();
-                /* LN 2895 - they join a temp table with itemstrands. Since we have the strands and item info
-                    already in the assessment object, we can get the poolcount here */
-                // Get the count of (non-field test) items that have the same strand value
-                int poolCount = (int) itemPool.stream()
-                        .filter(innerItem ->
-                                !innerItem.isFieldTest() &&
-                                innerItem.getStrand().equals(itemStrand.getName()))
-                        .count();
+                // Get the count of (non-field test) items that have the same strand value and cache it
+                int poolCount;
 
-                segmentBluePrints.add(new SegmentBluePrint(
-                        item.getStrand(),
-                        itemStrand.getMinItems(),
-                        poolCount));
+                if (strandCountMap.containsKey(itemStrand.getName())) {
+                    poolCount = strandCountMap.get(itemStrand.getName());
+                } else {
+                    poolCount = (int) itemPool.stream()
+                        .filter(innerItem ->
+                            !innerItem.isFieldTest() &&
+                            innerItem.getStrand().equals(itemStrand.getName()))
+                        .count();
+                    strandCountMap.put(itemStrand.getName(), poolCount);
+                }
+
+                strandCount += poolCount;
+
+                if (poolCount < itemStrand.getMinItems()) {
+                    shortfall += (itemStrand.getMinItems() - poolCount);
+                }
             } else {
-                LOG.warn(String.format("No strand match for item with id \"{}\" and strand \"{}\". Unable to add to segment pool computation"),
+                LOG.warn("No strand match for item with id '{}' and strand '{}'. Unable to add to segment pool computation",
                         item.getId(), item.getStrand());
             }
         }
@@ -73,57 +84,18 @@ public class SegmentPoolServiceImpl implements SegmentPoolService {
         /* [2887,2914]: sessionKey is null only when we are not in simulation mode. See line 4622.
             TODO: Skip the conditional branch of code [2914-2938] until simulation mode is implemented  */
 
-        /* [2904] Realistically, this should always be 'adaptive2' here, but we'll follow legacy conditional logic anyway */
-        int testLength = Algorithm.ADAPTIVE_2.equals(segment.getSelectionAlgorithm()) ? segment.getMaxItems() : segment.getMinItems();
-        /* [2939] select convert(sum(minitems - poolcnt), SIGNED) as shortfall from ${bluePrintTable} where poolcnt < minitems */
-        int shortfall = segmentBluePrints.stream()
-                .filter(bluePrint -> bluePrint.getPoolCount() < bluePrint.getMinItems())
-                .mapToInt(bluePrint -> bluePrint.getMinItems() - bluePrint.getPoolCount())
-                .sum();
-        /* [1885] Get the sum of all the strands: select convert(sum(poolcnt), SIGNED) as strandcnt from ${bluePrintTable}; */
-        int strandCount = segmentBluePrints.stream()
-                .mapToInt(SegmentBluePrint::getPoolCount)
-                .sum();
-        int lengthDelta = testLength - shortfall;
-        int newLength = lengthDelta < strandCount ?
-                lengthDelta > 0 ?
-                        lengthDelta :
-                        testLength
-                : strandCount;
-
-        Set<String> itemPoolIds = itemPool.stream().map(Item::getId).collect(Collectors.toSet());
-
-        return new SegmentPoolInfo.Builder()
-                .withItemPoolIds(itemPoolIds)
-                .withPoolCount(strandCount)
-                .withLength(newLength)
-                .build();
-    }
-
-    /**
-     * Class to represent grouping of segment blueprint metadata
-     */
-    private class SegmentBluePrint {
-        private String strand;
-        private int minItems;
-        private int poolCount;
-
-        public SegmentBluePrint(String strand, int minItems, int poolCount) {
-            this.strand = strand;
-            this.minItems = minItems;
-            this.poolCount = poolCount;
+        int lengthDelta = segment.getMaxItems() - shortfall;
+        int newLength;
+        if (lengthDelta < strandCount) {
+            if (lengthDelta > 0) {
+                newLength = lengthDelta;
+            } else {
+                newLength = segment.getMaxItems();
+            }
+        } else {
+            newLength = strandCount;
         }
 
-        public String getStrand() {
-            return this.strand;
-        }
-
-        public int getPoolCount() {
-            return this.poolCount;
-        }
-
-        public int getMinItems() {
-            return this.minItems;
-        }
+        return new SegmentPoolInfo(newLength, strandCount, itemPool);
     }
 }
