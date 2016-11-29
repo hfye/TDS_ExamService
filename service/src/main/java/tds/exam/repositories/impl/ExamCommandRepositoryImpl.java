@@ -22,12 +22,11 @@ class ExamCommandRepositoryImpl implements ExamCommandRepository {
     }
 
     @Override
-    public void save(Exam exam) {
+    public void insert(Exam exam) {
         SqlParameterSource examParameters = new MapSqlParameterSource("id", getBytesFromUUID(exam.getId()))
             .addValue("clientName", exam.getClientName())
             .addValue("environment", exam.getEnvironment())
             .addValue("sessionId", getBytesFromUUID(exam.getSessionId()))
-            .addValue("browserId", getBytesFromUUID(exam.getBrowserId()))
             .addValue("subject", exam.getSubject())
             .addValue("loginSsid", exam.getLoginSSID())
             .addValue("studentId", exam.getStudentId())
@@ -37,7 +36,7 @@ class ExamCommandRepositoryImpl implements ExamCommandRepository {
             .addValue("assessmentWindowId", exam.getAssessmentWindowId())
             .addValue("assessmentAlgorithm", exam.getAssessmentAlgorithm())
             .addValue("segmented", exam.isSegmented())
-            .addValue("dateStarted", mapJodaInstantToTimestamp(exam.getDateStarted()));
+            .addValue("dateJoined", mapJodaInstantToTimestamp(exam.getDateJoined()));
 
         String examInsertSQL = "INSERT INTO exam \n" +
             "(\n" +
@@ -45,7 +44,6 @@ class ExamCommandRepositoryImpl implements ExamCommandRepository {
             "  client_name, \n" +
             "  environment,\n" +
             "  session_id,\n" +
-            "  browser_id,\n" +
             "  subject,\n" +
             "  login_ssid,\n" +
             "  student_id,\n" +
@@ -55,7 +53,7 @@ class ExamCommandRepositoryImpl implements ExamCommandRepository {
             "  assessment_window_id,\n" +
             "  assessment_algorithm,\n" +
             "  segmented,\n" +
-            "  date_started \n" +
+            "  date_joined\n" +
             ")\n" +
             "VALUES\n" +
             "(\n" +
@@ -63,7 +61,6 @@ class ExamCommandRepositoryImpl implements ExamCommandRepository {
             "  :clientName,\n" +
             "  :environment,\n" +
             "  :sessionId,\n" +
-            "  :browserId,\n" +
             "  :subject,\n" +
             "  :loginSsid,\n" +
             "  :studentId,\n" +
@@ -73,7 +70,7 @@ class ExamCommandRepositoryImpl implements ExamCommandRepository {
             "  :assessmentWindowId,\n" +
             "  :assessmentAlgorithm,\n" +
             "  :segmented,\n" +
-            "  :dateStarted\n" +
+            "  :dateJoined \n" +
             ");";
 
         int insertCount = jdbcTemplate.update(examInsertSQL, examParameters);
@@ -90,35 +87,47 @@ class ExamCommandRepositoryImpl implements ExamCommandRepository {
         SqlParameterSource examEventParameters = new MapSqlParameterSource("examId", getBytesFromUUID(exam.getId()))
             .addValue("attempts", exam.getAttempts())
             .addValue("status", exam.getStatus().getStatus())
+            .addValue("browserId", getBytesFromUUID(exam.getBrowserId()))
             .addValue("statusChangeReason", exam.getStatusChangeReason())
             .addValue("dateChanged", mapJodaInstantToTimestamp(exam.getDateChanged()))
             .addValue("dateDeleted", mapJodaInstantToTimestamp(exam.getDateDeleted()))
             .addValue("dateCompleted", mapJodaInstantToTimestamp(exam.getDateCompleted()))
             .addValue("dateScored", mapJodaInstantToTimestamp(exam.getDateScored()))
-            .addValue("dateJoined", mapJodaInstantToTimestamp(exam.getDateJoined()));
+            .addValue("abnormalStarts", exam.getAbnormalStarts())
+            .addValue("waitingForSegmentApproval", exam.isWaitingForSegmentApproval())
+            .addValue("currentSegmentPosition", exam.getCurrentSegmentPosition())
+            .addValue("dateStarted", mapJodaInstantToTimestamp(exam.getDateStarted()));
 
         String examEventInsertSQL = "INSERT INTO exam_event (\n" +
             "  exam_id,\n" +
-            "  attempts,\n" +
+            "  attempts, \n" +
+            "  browser_id, \n" +
             "  status,\n" +
             "  status_change_reason,\n" +
             "  date_changed,\n" +
             "  date_deleted,\n" +
             "  date_completed,\n" +
             "  date_scored,\n" +
-            "  date_joined\n" +
+            "  date_started,\n" +
+            "  waiting_for_segment_approval,\n" +
+            "  current_segment_position,\n" +
+            "  abnormal_starts\n" +
             ")\n" +
             "VALUES\n" +
             "(\n" +
             "  :examId,\n" +
             "  :attempts,\n" +
+            "  :browserId,\n" +
             "  :status,\n" +
             "  :statusChangeReason,\n" +
             "  :dateChanged,\n" +
             "  :dateDeleted,\n" +
             "  :dateCompleted,\n" +
             "  :dateScored,\n" +
-            "  :dateJoined\n" +
+            "  :dateStarted,\n" +
+            "  :waitingForSegmentApproval,\n" +
+            "  :currentSegmentPosition,\n" +
+            "  :abnormalStarts\n" +
             ");";
 
         int insertCount = jdbcTemplate.update(examEventInsertSQL, examEventParameters);
