@@ -4,12 +4,10 @@ import org.joda.time.Instant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
 import java.util.Optional;
 
 import tds.assessment.Assessment;
 import tds.assessment.Segment;
-import tds.common.data.legacy.LegacyComparer;
 import tds.config.ClientSegmentProperty;
 import tds.config.ClientTestProperty;
 import tds.exam.Exam;
