@@ -16,7 +16,6 @@ import tds.session.Session;
  * Main entry point for interacting with {@link Exam}
  */
 public interface ExamService {
-    String SIMULATION = "SIMULATION";
 
     /**
      * Retrieves an exam based on the UUID

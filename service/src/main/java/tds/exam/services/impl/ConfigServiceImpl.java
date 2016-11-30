@@ -15,7 +15,6 @@ import java.util.Optional;
 
 import tds.config.Accommodation;
 import tds.config.AssessmentWindow;
-import tds.config.ClientSegmentProperty;
 import tds.config.ClientSystemFlag;
 import tds.config.ClientTestProperty;
 import tds.exam.configuration.ExamServiceProperties;

@@ -100,8 +100,7 @@ public class ConfigServiceImplTest {
 
         ResponseEntity<List<AssessmentWindow>> entity = new ResponseEntity<>(Collections.singletonList(window), HttpStatus.OK);
 
-        when(restTemplate.exchange(url, GET, null, new ParameterizedTypeReference<List<AssessmentWindow>>() {
-        }))
+        when(restTemplate.exchange(url, GET, null, new ParameterizedTypeReference<List<AssessmentWindow>>() {}))
             .thenReturn(entity);
 
         List<AssessmentWindow> windows = configService.findAssessmentWindows("SBAC_PT", "ELA 11", 0, 23, config);
@@ -109,6 +108,7 @@ public class ConfigServiceImplTest {
         assertThat(windows).containsExactly(window);
     }
 
+    
     @Test
     public void shouldFindClientSystemFlag() {
         ClientSystemFlag flag = new ClientSystemFlag.Builder().withAuditObject(ATTRIBUTE_OBJECT).build();
