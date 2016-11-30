@@ -108,7 +108,7 @@ public class ConfigServiceImplTest {
         assertThat(windows).containsExactly(window);
     }
 
-    
+
     @Test
     public void shouldFindClientSystemFlag() {
         ClientSystemFlag flag = new ClientSystemFlag.Builder().withAuditObject(ATTRIBUTE_OBJECT).build();
