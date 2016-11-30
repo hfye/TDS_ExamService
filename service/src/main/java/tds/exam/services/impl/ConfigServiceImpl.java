@@ -59,25 +59,6 @@ class ConfigServiceImpl implements ConfigService {
     }
 
     @Override
-    public Optional<ClientSegmentProperty> findClientSegmentProperty(String clientName, String segmentId) {
-        UriComponentsBuilder builder =
-            UriComponentsBuilder
-                .fromHttpUrl(String.format("%s/client-segment-properties/%s/%s", examServiceProperties.getConfigUrl(), clientName, segmentId));
-
-        Optional<ClientSegmentProperty> maybeClientSegmentProperty = Optional.empty();
-        try {
-            final ClientSegmentProperty clientSegmentProperty = restTemplate.getForObject(builder.toUriString(), ClientSegmentProperty.class);
-            maybeClientSegmentProperty = Optional.of(clientSegmentProperty);
-        } catch (HttpClientErrorException hce) {
-            if (hce.getStatusCode() != HttpStatus.NOT_FOUND) {
-                throw hce;
-            }
-        }
-
-        return maybeClientSegmentProperty;
-    }
-
-    @Override
     public List<AssessmentWindow> findAssessmentWindows(String clientName,
                                                         String assessmentId,
                                                         int sessionType,

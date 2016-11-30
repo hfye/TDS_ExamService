@@ -5,7 +5,6 @@ import java.util.Optional;
 
 import tds.config.Accommodation;
 import tds.config.AssessmentWindow;
-import tds.config.ClientSegmentProperty;
 import tds.config.ClientSystemFlag;
 import tds.config.ClientTestProperty;
 import tds.session.ExternalSessionConfiguration;
@@ -23,15 +22,6 @@ public interface ConfigService {
      * @return A set of client and assessment-specific properties.
      */
     Optional<ClientTestProperty> findClientTestProperty(final String clientName, final String assessmentId);
-
-    /**
-     * Retrieves the {@link ClientSegmentProperty} for the given client and segment id
-     *
-     * @param clientName   client name of the environment
-     * @param segmentId segment to retrieve {@link ClientSegmentProperty} for
-     * @return A set of client and segment-specific properties.
-     */
-    Optional<ClientSegmentProperty> findClientSegmentProperty(final String clientName, final String segmentId);
 
     /**
      * Finds the assessment windows for an exam
