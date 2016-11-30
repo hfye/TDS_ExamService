@@ -26,7 +26,7 @@ public class FieldTestServiceImpl implements FieldTestService {
                 item.getItemProperties().stream()
                     .filter(prop ->
                         prop.getName().equalsIgnoreCase(Accommodation.ACCOMMODATION_TYPE_LANGUAGE) &&
-                        prop.getValue().equals(languageCode))
+                        prop.getValue().equalsIgnoreCase(languageCode))
                     .findFirst().isPresent())
             .count();
 
