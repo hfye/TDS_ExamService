@@ -16,7 +16,6 @@ import java.util.Optional;
 
 import tds.config.Accommodation;
 import tds.config.AssessmentWindow;
-import tds.config.ClientSegmentProperty;
 import tds.config.ClientSystemFlag;
 import tds.config.ClientTestProperty;
 import tds.exam.builder.ExternalSessionConfigurationBuilder;
@@ -35,7 +34,6 @@ import static org.springframework.http.HttpMethod.GET;
 public class ConfigServiceImplTest {
     private static final String CLIENT_NAME = "CLIENT_TEST";
     private static final String ASSESSMENT_ID = "assessment-id-1";
-    private static final String SEGMENT_ID = "segment-id-1";
     private static final String BASE_URL = "http://localhost:8080/config";
     private static final String ATTRIBUTE_OBJECT = "AnonymousTestee";
 
@@ -75,33 +73,6 @@ public class ConfigServiceImplTest {
     public void shouldThrowIfStatusNotNotFoundWhenUnexpectedErrorFindingClientTestProperty() {
         when(restTemplate.getForObject(String.format("%s/client-test-properties/%s/%s", BASE_URL, CLIENT_NAME, ASSESSMENT_ID), ClientTestProperty.class)).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
         configService.findClientTestProperty(CLIENT_NAME, ASSESSMENT_ID);
-    }
-
-    @Test
-    public void shouldFindClientSegmentPropertyById() {
-        ClientSegmentProperty clientSegmentProperty = new ClientSegmentProperty.Builder()
-            .withClientName(CLIENT_NAME)
-            .withSegmentId(SEGMENT_ID)
-            .build();
-
-        when(restTemplate.getForObject(String.format("%s/client-segment-properties/%s/%s", BASE_URL, CLIENT_NAME, SEGMENT_ID), ClientSegmentProperty.class)).thenReturn(clientSegmentProperty);
-        Optional<ClientSegmentProperty> maybeClientSegmentProperty = configService.findClientSegmentProperty(CLIENT_NAME, SEGMENT_ID);
-
-        assertThat(maybeClientSegmentProperty.get()).isEqualTo(clientSegmentProperty);
-    }
-
-    @Test
-    public void shouldReturnEmptyWhenClientSegmentPropertyNotFound() {
-        when(restTemplate.getForObject(String.format("%s/client-segment-properties/%s/%s", BASE_URL, CLIENT_NAME, SEGMENT_ID), ClientSegmentProperty.class)).thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
-        Optional<ClientSegmentProperty> maybeClientSegmentProperty = configService.findClientSegmentProperty(CLIENT_NAME, SEGMENT_ID);
-
-        assertThat(maybeClientSegmentProperty).isNotPresent();
-    }
-
-    @Test (expected = RestClientException.class)
-    public void shouldThrowIfStatusNotNotFoundWhenUnexpectedErrorFindingClientSegmentProperty() {
-        when(restTemplate.getForObject(String.format("%s/client-segment-properties/%s/%s", BASE_URL, CLIENT_NAME, SEGMENT_ID), ClientSegmentProperty.class)).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
-        configService.findClientSegmentProperty(CLIENT_NAME, SEGMENT_ID);
     }
 
     @Test

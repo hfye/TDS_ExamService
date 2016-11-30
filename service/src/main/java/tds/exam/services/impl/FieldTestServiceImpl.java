@@ -1,27 +1,17 @@
 package tds.exam.services.impl;
 
 import org.joda.time.Instant;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 import tds.assessment.Assessment;
 import tds.assessment.Segment;
-import tds.config.ClientSegmentProperty;
-import tds.config.ClientTestProperty;
+import tds.config.Accommodation;
 import tds.exam.Exam;
-import tds.exam.services.ConfigService;
 import tds.exam.services.FieldTestService;
+import tds.session.ExternalSessionConfiguration;
 
 @Service
 public class FieldTestServiceImpl implements FieldTestService {
-    private ConfigService configService;
-
-    @Autowired
-    public FieldTestServiceImpl(ConfigService configService) {
-        this.configService = configService;
-    }
 
     @Override
     public boolean isFieldTestEligible(Exam exam, Assessment assessment, String segmentKey, String languageCode) {
@@ -31,59 +21,40 @@ public class FieldTestServiceImpl implements FieldTestService {
         // Get the count items that are compatible with the selected language
         /* StudentDLL [4430] */
         int fieldTestItemCount = (int) currentSegment.getItems().stream()
-                .filter(item ->
-                    item.isFieldTest() &&
-                    item.getItemProperties().stream()
-                        .filter(prop ->
-                            prop.getName().equals("Language") &&
-                            prop.getValue().equals(languageCode))
-                        .findFirst().isPresent())
-                .count();
+            .filter(item ->
+                item.isFieldTest() &&
+                item.getItemProperties().stream()
+                    .filter(prop ->
+                        prop.getName().equalsIgnoreCase(Accommodation.ACCOMMODATION_TYPE_LANGUAGE) &&
+                        prop.getValue().equals(languageCode))
+                    .findFirst().isPresent())
+            .count();
 
-        // This is line 4437 and 4453 combined into one conditional
-        //TODO: Move to enum/const
-        if (fieldTestItemCount > 0 && currentSegment.getFieldTestMinItems() > 0)
-            if ("SIMULATION".equals(exam.getEnvironment())) {
+        /* This is line 4437 and 4453 combined into one conditional */
+        if (fieldTestItemCount > 0 && currentSegment.getFieldTestMinItems() > 0) {
+            if (ExternalSessionConfiguration.SIMULATION_ENVIRONMENT.equalsIgnoreCase(exam.getEnvironment())) {
                 isEligible = true;
             } else {
-                // Check assessment config properties for field test time window
-                Optional<ClientTestProperty> maybeProperty = configService.findClientTestProperty(exam.getClientName(),
-                    assessment.getAssessmentId());
-
-                if (maybeProperty.isPresent()) {
-                    ClientTestProperty property = maybeProperty.get();
-
-                    boolean assessmentEligible = isWithinFieldTestWindow(property.getFieldTestStartDate(), property.getFieldTestEndDate());
-                    /* parentKey == testKey when the assessment is non-segmented */
-                    if (!assessment.isSegmented() || !assessmentEligible) {
-                        return assessmentEligible;
-                    }
-
-                    // if it is segmented, check the segment properties for field test time window
-                    Optional<ClientSegmentProperty> maybeSegmentProperty =
-                        configService.findClientSegmentProperty(exam.getClientName(), currentSegment.getSegmentId());
-
-                    if (maybeSegmentProperty.isPresent()) {
-                        ClientSegmentProperty segmentProperty = maybeSegmentProperty.get();
-                        isEligible = isWithinFieldTestWindow(segmentProperty.getFieldTestStartDate(), segmentProperty.getFieldTestEndDate());
-                    } else {
-                        throw new IllegalArgumentException(String.format("No client test property found for client %s with segment id %s",
-                            exam.getClientName(), currentSegment.getSegmentId()));
-                    }
-                } else {
-                    throw new IllegalArgumentException(String.format("No client test property found for client %s with assessment id %s",
-                        exam.getClientName(), assessment.getAssessmentId()));
+                /* Line [4473] : client_testproperties already included in Assessment */
+                boolean assessmentEligible = isWithinFieldTestWindow(assessment.getFieldTestStartDate(), assessment.getFieldTestEndDate());
+                /* parentKey == testKey when the assessment is non-segmented */
+                if (!assessment.isSegmented() || !assessmentEligible) {
+                    return assessmentEligible;
                 }
+                /* Line [4491]  : client_segmentproperties already included in Segments */
+                isEligible = isWithinFieldTestWindow(currentSegment.getFieldTestStartDate(), currentSegment.getFieldTestEndDate());
             }
+        }
 
         return isEligible;
     }
 
-
+    /*
+        This helper method is a null-tolerant Instant/date comparison for the test window
+     */
     private boolean isWithinFieldTestWindow(Instant startTime, Instant endTime) {
         boolean inWindow;
-
-        // null ft start/end times are considered "always open" windows
+        // null field test start/end times are considered "always open" windows
         if (startTime != null) {
             if (!startTime.isBeforeNow()) {
                 return false;
