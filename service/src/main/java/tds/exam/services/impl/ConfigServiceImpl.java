@@ -15,6 +15,7 @@ import java.util.Optional;
 
 import tds.config.Accommodation;
 import tds.config.AssessmentWindow;
+import tds.config.ClientSegmentProperty;
 import tds.config.ClientSystemFlag;
 import tds.config.ClientTestProperty;
 import tds.exam.configuration.ExamServiceProperties;
@@ -55,6 +56,25 @@ class ConfigServiceImpl implements ConfigService {
         }
 
         return maybeClientTestProperty;
+    }
+
+    @Override
+    public Optional<ClientSegmentProperty> findClientSegmentProperty(String clientName, String segmentId) {
+        UriComponentsBuilder builder =
+            UriComponentsBuilder
+                .fromHttpUrl(String.format("%s/client-segment-properties/%s/%s", examServiceProperties.getConfigUrl(), clientName, segmentId));
+
+        Optional<ClientSegmentProperty> maybeClientSegmentProperty = Optional.empty();
+        try {
+            final ClientSegmentProperty clientSegmentProperty = restTemplate.getForObject(builder.toUriString(), ClientSegmentProperty.class);
+            maybeClientSegmentProperty = Optional.of(clientSegmentProperty);
+        } catch (HttpClientErrorException hce) {
+            if (hce.getStatusCode() != HttpStatus.NOT_FOUND) {
+                throw hce;
+            }
+        }
+
+        return maybeClientSegmentProperty;
     }
 
     @Override
