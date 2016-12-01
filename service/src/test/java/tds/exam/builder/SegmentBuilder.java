@@ -15,11 +15,9 @@ public class SegmentBuilder {
     private float startAbility = 0;
     private String subjectName = "ENGLISH";
     private String assessmentKey = "(SBAC_PT)IRP-Perf-ELA-3-Summer-2015-2016";
-    private List<ItemProperty> languages = singletonList(new ItemProperty("Language", "ENU", "language for assessment"));
 
     public Segment build() {
         Segment segment = new Segment(key);
-        segment.setLanguages(languages);
         segment.setSegmentId(segmentId);
         segment.setSelectionAlgorithm(selectionAlgorithm);
         segment.setStartAbility(startAbility);
@@ -55,11 +53,6 @@ public class SegmentBuilder {
 
     public SegmentBuilder withAssessmentKey(String assessmentKey) {
         this.assessmentKey = assessmentKey;
-        return this;
-    }
-
-    public SegmentBuilder withLanguages(List<ItemProperty> languages) {
-        this.languages = languages;
         return this;
     }
 }
