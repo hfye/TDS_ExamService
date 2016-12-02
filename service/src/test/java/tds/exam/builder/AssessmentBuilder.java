@@ -1,5 +1,7 @@
 package tds.exam.builder;
 
+import org.joda.time.Instant;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -14,6 +16,8 @@ public class AssessmentBuilder {
     private float startAbility = 0;
     private String subject = "ENGLISH";
     private List<Segment> segments;
+    private Instant fieldTestStartDate;
+    private Instant fieldTestEndDate;
 
     public AssessmentBuilder() {
         segments = Collections.singletonList(new SegmentBuilder().build());
@@ -26,6 +30,8 @@ public class AssessmentBuilder {
         assessment.setSegments(segments);
         assessment.setSelectionAlgorithm(selectionAlgorithm);
         assessment.setStartAbility(startAbility);
+        assessment.setFieldTestStartDate(fieldTestStartDate);
+        assessment.setFieldTestEndDate(fieldTestEndDate);
         return assessment;
     }
 
@@ -56,6 +62,16 @@ public class AssessmentBuilder {
 
     public AssessmentBuilder withSegments(List<Segment> segments) {
         this.segments = segments;
+        return this;
+    }
+
+    public AssessmentBuilder withFieldTestStartDate(Instant fieldTestStartDate) {
+        this.fieldTestStartDate = fieldTestStartDate;
+        return this;
+    }
+
+    public AssessmentBuilder withFieldTestEndDate(Instant fieldTestEndDate) {
+        this.fieldTestEndDate = fieldTestEndDate;
         return this;
     }
 }
