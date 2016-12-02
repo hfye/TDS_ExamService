@@ -1,7 +1,7 @@
 package tds.exam.services.impl;
 
 import org.joda.time.Instant;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
@@ -13,7 +13,7 @@ import tds.exam.Exam;
 import tds.exam.services.FieldTestService;
 import tds.session.ExternalSessionConfiguration;
 
-@Service
+@Component
 public class FieldTestServiceImpl implements FieldTestService {
 
     @Override
