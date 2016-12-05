@@ -23,7 +23,6 @@ import tds.common.data.legacy.LegacyComparer;
 import tds.config.Accommodation;
 import tds.config.AssessmentWindow;
 import tds.config.ClientSystemFlag;
-import tds.config.ClientTestProperty;
 import tds.config.TimeLimitConfiguration;
 import tds.exam.ApprovalRequest;
 import tds.exam.Exam;
@@ -139,7 +138,7 @@ class ExamServiceImpl implements ExamService {
             }
         }
 
-        Optional<Assessment> maybeAssessment = assessmentService.findAssessmentByKey(openExamRequest.getClientName(),
+        Optional<Assessment> maybeAssessment = assessmentService.findAssessment(openExamRequest.getClientName(),
             openExamRequest.getAssessmentKey());
         if (!maybeAssessment.isPresent()) {
             throw new IllegalArgumentException(String.format("Assessment information could not be found for assessment key %s", openExamRequest.getAssessmentKey()));
@@ -190,18 +189,18 @@ class ExamServiceImpl implements ExamService {
      * @inheritDoc
      */
     @Override
-    public Optional<Double> getInitialAbility(Exam exam, ClientTestProperty property) {
+    public Optional<Double> getInitialAbility(Exam exam, Assessment assessment) {
         Optional<Double> ability = Optional.empty();
-        Double slope = property.getAbilitySlope();
-        Double intercept = property.getAbilityIntercept();
+        float slope = assessment.getAbilitySlope();
+        float intercept = assessment.getAbilityIntercept();
         List<Ability> testAbilities = examQueryRepository.findAbilities(exam.getId(), exam.getClientName(),
-            property.getSubjectName(), exam.getStudentId());
+            assessment.getSubject(), exam.getStudentId());
 
         // Attempt to retrieve the most recent ability for the current subject and assessment
         Optional<Ability> initialAbility = getMostRecentTestAbilityForSameAssessment(testAbilities, exam.getAssessmentId());
         if (initialAbility.isPresent()) {
             ability = Optional.of(initialAbility.get().getScore());
-        } else if (property.getInitialAbilityBySubject()) {
+        } else if (assessment.isInitialAbilityBySubject()) {
             // if no ability for a similar assessment was retrieved above, attempt to get the initial ability for another
             // assessment of the same subject
             initialAbility = getMostRecentTestAbilityForDifferentAssessment(testAbilities, exam.getAssessmentId());
@@ -212,24 +211,15 @@ class ExamServiceImpl implements ExamService {
                 Optional<Double> initialAbilityFromHistory = historyQueryRepository.findAbilityFromHistoryForSubjectAndStudent(
                     exam.getClientName(), exam.getSubject(), exam.getStudentId());
 
-                if (initialAbilityFromHistory.isPresent() && slope != null && intercept != null) {
+                if (initialAbilityFromHistory.isPresent()) {
                     ability = Optional.of(initialAbilityFromHistory.get() * slope + intercept);
-                } else if (initialAbilityFromHistory.isPresent()) {
-                    // If no slope/intercept is provided, store base value
-                    ability = initialAbilityFromHistory;
                 }
             }
         }
 
         // If the ability was not retrieved from any of the exam tables, query the assessment service
         if (!ability.isPresent()) {
-            Optional<Assessment> maybeAssessment = assessmentService.findAssessmentByKey(exam.getClientName(),
-                exam.getAssessmentId());
-            if (maybeAssessment.isPresent()) {
-                ability = Optional.of((double) maybeAssessment.get().getStartAbility());
-            } else {
-                LOG.warn("Could not set the ability for exam ID " + exam.getId());
-            }
+            ability = Optional.of((double) assessment.getStartAbility());
         }
 
         return ability;

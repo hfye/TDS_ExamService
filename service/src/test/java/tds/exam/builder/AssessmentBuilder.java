@@ -16,6 +16,9 @@ public class AssessmentBuilder {
     private float startAbility = 0;
     private String subject = "ENGLISH";
     private List<Segment> segments;
+    private boolean initialAbilityBySubject;
+    private float abilitySlope;
+    private float abilityIntercept;
     private Instant fieldTestStartDate;
     private Instant fieldTestEndDate;
 
@@ -32,11 +35,30 @@ public class AssessmentBuilder {
         assessment.setStartAbility(startAbility);
         assessment.setFieldTestStartDate(fieldTestStartDate);
         assessment.setFieldTestEndDate(fieldTestEndDate);
+        assessment.setAbilitySlope(abilitySlope);
+        assessment.setAbilityIntercept(abilityIntercept);
+        assessment.setInitialAbilityBySubject(initialAbilityBySubject);
+        assessment.setSubject(subject);
         return assessment;
     }
 
     public AssessmentBuilder withKey(String key) {
         this.key = key;
+        return this;
+    }
+
+    public AssessmentBuilder withInitialAbilityBySubject(boolean initialAbilityBySubject) {
+        this.initialAbilityBySubject = initialAbilityBySubject;
+        return this;
+    }
+
+    public AssessmentBuilder withAbilitySlope(float abilitySlope) {
+        this.abilitySlope = abilitySlope;
+        return this;
+    }
+
+    public AssessmentBuilder withAbilityIntercept(float abilityIntercept) {
+        this.abilityIntercept = abilityIntercept;
         return this;
     }
 
