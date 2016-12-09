@@ -3,6 +3,7 @@ package tds.exam.services;
 import java.util.List;
 import java.util.UUID;
 
+import tds.assessment.AdaptiveSegment;
 import tds.assessment.ItemConstraint;
 import tds.assessment.Segment;
 import tds.exam.Exam;
@@ -20,5 +21,6 @@ public interface SegmentPoolService {
      * @param segment       The segment being constructed
      * @return      The {@link tds.exam.models.SegmentPoolInfo} containing segment pool information
      */
-    SegmentPoolInfo computeSegmentPool(UUID examId, Segment segment, List<ItemConstraint> itemConstraints);
+    SegmentPoolInfo computeSegmentPool(UUID examId, AdaptiveSegment segment, List<ItemConstraint> itemConstraints,
+                                       String languageCode);
 }

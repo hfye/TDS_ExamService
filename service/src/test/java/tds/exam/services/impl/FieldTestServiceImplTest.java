@@ -7,6 +7,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import tds.assessment.AdaptiveSegment;
 import tds.assessment.Assessment;
 import tds.assessment.Item;
 import tds.assessment.ItemProperty;
@@ -14,16 +15,24 @@ import tds.assessment.Segment;
 import tds.exam.Exam;
 import tds.exam.builder.AssessmentBuilder;
 import tds.exam.builder.ExamBuilder;
+import tds.exam.repositories.FieldTestItemGroupQueryRepository;
 import tds.exam.services.FieldTestService;
+import tds.exam.services.ItemPoolService;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class FieldTestServiceImplTest {
     private FieldTestService fieldTestService;
+    private FieldTestItemGroupQueryRepository mockItemGroupQueryRepository;
+    private ItemPoolService mockItemPoolService;
 
     @Before
     public void setUp() {
+        mockItemGroupQueryRepository = mock(FieldTestItemGroupQueryRepository.class);
+        mockItemPoolService = mock(ItemPoolService.class);
         fieldTestService = new FieldTestServiceImpl();
+//        fieldTestService = new FieldTestServiceImpl(mockItemGroupQueryRepository, mockItemPoolService);
     }
 
     @Test
@@ -34,7 +43,7 @@ public class FieldTestServiceImplTest {
         final Exam exam = new ExamBuilder().build();
         List<Item> items = createTestItems(false);
 
-        Segment seg1 = new Segment(segmentKey);
+        AdaptiveSegment seg1 = new AdaptiveSegment(segmentKey);
         seg1.setItems(items);
         seg1.setFieldTestMinItems(1);
 
@@ -59,7 +68,7 @@ public class FieldTestServiceImplTest {
 
         List<Item> items = createTestItems(true);
 
-        Segment seg1 = new Segment(segmentKey);
+        AdaptiveSegment seg1 = new AdaptiveSegment(segmentKey);
         seg1.setFieldTestMinItems(1);
         seg1.setItems(items);
 
@@ -82,7 +91,7 @@ public class FieldTestServiceImplTest {
 
         List<Item> items = createTestItems(true);
 
-        Segment seg1 = new Segment(segmentKey);
+        AdaptiveSegment seg1 = new AdaptiveSegment(segmentKey);
         seg1.setFieldTestMinItems(1);
         seg1.setItems(items);
 
@@ -105,7 +114,7 @@ public class FieldTestServiceImplTest {
 
         List<Item> items = createTestItems(true);
 
-        Segment seg1 = new Segment(segmentKey);
+        AdaptiveSegment seg1 = new AdaptiveSegment(segmentKey);
         seg1.setFieldTestMinItems(1);
         seg1.setItems(items);
 
@@ -129,7 +138,7 @@ public class FieldTestServiceImplTest {
         final Exam exam = new ExamBuilder().build();
         List<Item> items = createTestItems(true);
 
-        Segment seg1 = new Segment(segmentKey);
+        AdaptiveSegment seg1 = new AdaptiveSegment(segmentKey);
         seg1.setFieldTestMinItems(1);
         seg1.setItems(items);
 
@@ -154,7 +163,7 @@ public class FieldTestServiceImplTest {
 
         List<Item> items = createTestItems(true);
 
-        Segment seg1 = new Segment(segmentKey);
+        AdaptiveSegment seg1 = new AdaptiveSegment(segmentKey);
         seg1.setFieldTestMinItems(1);
         seg1.setItems(items);
 
@@ -178,7 +187,7 @@ public class FieldTestServiceImplTest {
         final Exam exam = new ExamBuilder().build();
         List<Item> items = createTestItems(true);
 
-        Segment seg1 = new Segment(segmentKey);
+        AdaptiveSegment seg1 = new AdaptiveSegment(segmentKey);
         seg1.setFieldTestMinItems(1);
         seg1.setItems(items);
 
@@ -204,7 +213,7 @@ public class FieldTestServiceImplTest {
         final Exam exam = new ExamBuilder().build();
         List<Item> items = createTestItems(true);
 
-        Segment seg1 = new Segment(segmentKey);
+        AdaptiveSegment seg1 = new AdaptiveSegment(segmentKey);
         seg1.setSegmentId(segmentId);
         seg1.setFieldTestMinItems(1);
         seg1.setItems(items);
@@ -212,7 +221,7 @@ public class FieldTestServiceImplTest {
         seg1.setFieldTestStartDate(Instant.now().minus(100000));
         seg1.setFieldTestEndDate(Instant.now().minus(2000000));
 
-        Segment seg2 = new Segment("anotherSegment");
+        AdaptiveSegment seg2 = new AdaptiveSegment("anotherSegment");
 
         List<Segment> segments = new ArrayList<>();
         segments.add(seg1);
@@ -238,12 +247,12 @@ public class FieldTestServiceImplTest {
         List<Item> items = createTestItems(true);
 
         // Null field test start/end dates - eligible FT window
-        Segment seg1 = new Segment(segmentKey);
+        AdaptiveSegment seg1 = new AdaptiveSegment(segmentKey);
         seg1.setSegmentId(segmentId);
         seg1.setFieldTestMinItems(1);
         seg1.setItems(items);
 
-        Segment seg2 = new Segment("anotherSegment");
+        AdaptiveSegment seg2 = new AdaptiveSegment("anotherSegment");
 
         List<Segment> segments = new ArrayList<>();
         segments.add(seg1);
@@ -269,12 +278,12 @@ public class FieldTestServiceImplTest {
 
         List<Item> items = createTestItems(true);
 
-        Segment seg1 = new Segment(segmentKey);
+        AdaptiveSegment seg1 = new AdaptiveSegment(segmentKey);
         seg1.setFieldTestMinItems(1);
         seg1.setItems(items);
         seg1.setFieldTestStartDate(Instant.now().minus(100000));
         seg1.setFieldTestEndDate(Instant.now().plus(2000000));
-        Segment seg2 = new Segment("anotherSegment");
+        AdaptiveSegment seg2 = new AdaptiveSegment("anotherSegment");
 
         List<Segment> segments = new ArrayList<>();
         segments.add(seg1);

@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import tds.assessment.AdaptiveSegment;
 import tds.assessment.Algorithm;
 import tds.assessment.Assessment;
 import tds.assessment.Segment;
@@ -37,7 +38,7 @@ public class AssessmentServiceImplTest {
     @Test
     public void shouldFindSetOfAdminSubjectsByKey() {
         List<Segment> segments = new ArrayList<>();
-        Segment segment = new Segment("segkey");
+        Segment segment = new AdaptiveSegment("segkey");
         segment.setSegmentId("segid");
         segment.setAssessmentKey("key");
         segment.setSelectionAlgorithm(Algorithm.FIXED_FORM);

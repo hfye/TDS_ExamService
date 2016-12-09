@@ -1,20 +1,30 @@
 package tds.exam.services.impl;
 
 import org.joda.time.Instant;
-import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
 import tds.assessment.Assessment;
 import tds.assessment.Item;
 import tds.assessment.Segment;
-import tds.config.Accommodation;
 import tds.exam.Exam;
+import tds.exam.repositories.FieldTestItemGroupQueryRepository;
 import tds.exam.services.FieldTestService;
+import tds.exam.services.ItemPoolService;
 import tds.session.ExternalSessionConfiguration;
 
-@Component
+@Service
 public class FieldTestServiceImpl implements FieldTestService {
+//    private final FieldTestItemGroupQueryRepository fieldTestItemGroupQueryRepository;
+//    private final ItemPoolService itemPoolService;
+//
+//    @Autowired TODO: Autowire this once FieldTestServiceImpl.selectItemGroups is implemented
+//    public FieldTestServiceImpl(FieldTestItemGroupQueryRepository queryRepository, ItemPoolService itemPoolService) {
+//        this. fieldTestItemGroupQueryRepository = queryRepository;
+//        this.itemPoolService = itemPoolService;
+//    }
 
     @Override
     public boolean isFieldTestEligible(Exam exam, Assessment assessment, String segmentKey, String languageCode) {
@@ -25,14 +35,8 @@ public class FieldTestServiceImpl implements FieldTestService {
         if (currentSegment.getFieldTestMinItems() > 0) {
             // Check if there exists at least one field test item in the segment with the selected language
             /* StudentDLL [4430] */
-            Optional<Item> fieldTestItem = currentSegment.getItems().stream()
-                .filter(item ->
-                    item.isFieldTest() &&
-                        item.getItemProperties().stream()
-                            .filter(prop ->
-                                prop.getName().equalsIgnoreCase(Accommodation.ACCOMMODATION_TYPE_LANGUAGE) &&
-                                    prop.getValue().equalsIgnoreCase(languageCode))
-                            .findFirst().isPresent())
+            Optional<Item> fieldTestItem = currentSegment.getItems(languageCode).stream()
+                .filter(item -> item.isFieldTest())
                 .findFirst();
 
              /* [4430 - 4442] checks to see if the segment contains at least one FT item */
@@ -58,6 +62,15 @@ public class FieldTestServiceImpl implements FieldTestService {
         }
 
         return isEligible;
+    }
+
+    /*
+        This code covers legacy StudentDLL._FT_SelectItemgroups_SP [line 3033] and is called by _InitializeTestSegments_SP [4704]
+     */
+    @Override
+    public int selectItemGroups(Exam exam, Assessment assessment, String segmentKey, String language) {
+        //TODO: Implement. Adding stub to prevent compilation errors
+        return 0;
     }
 
     /*

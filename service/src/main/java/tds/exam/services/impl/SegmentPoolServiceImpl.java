@@ -5,19 +5,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
-import tds.assessment.Algorithm;
+import tds.assessment.AdaptiveSegment;
 import tds.assessment.Item;
 import tds.assessment.ItemConstraint;
-import tds.assessment.Segment;
 import tds.assessment.Strand;
 import tds.exam.models.SegmentPoolInfo;
 import tds.exam.services.ItemPoolService;
@@ -34,10 +31,10 @@ public class SegmentPoolServiceImpl implements SegmentPoolService {
     }
 
     @Override
-    public SegmentPoolInfo computeSegmentPool(final UUID examId, final Segment segment,
-                                              final List<ItemConstraint> itemConstraints) {
+    public SegmentPoolInfo computeSegmentPool(final UUID examId, final AdaptiveSegment segment,
+                                              final List<ItemConstraint> itemConstraints, final String languageCode) {
         // Get the list of eligible items based on constraints and exam accommodations
-        Set<Item> itemPool = itemPoolService.getItemPool(examId, itemConstraints, segment.getItems());
+        Set<Item> itemPool = itemPoolService.getItemPool(examId, itemConstraints, segment.getItems(languageCode));
         /* getItemPool selects the items that are eligible for the segment pool we are constructing.
            In legacy code, we can skip a lot of the temp-table initialization logic because of this */
         Set<Strand> strands = segment.getStrands();
