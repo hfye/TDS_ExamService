@@ -10,7 +10,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import tds.assessment.AdaptiveSegment;
 import tds.assessment.Algorithm;
 import tds.assessment.Item;
 import tds.assessment.ItemConstraint;
@@ -40,8 +39,7 @@ public class SegmentPoolServiceImplTest {
         final UUID examId = UUID.randomUUID();
         final String assessmentId = "my-assessment-id";
         final String segmentKey = "my-segment-key";
-        AdaptiveSegment segment = new AdaptiveSegment(segmentKey);
-        segment.setSelectionAlgorithm(Algorithm.ADAPTIVE_2);
+        Segment segment = new Segment(segmentKey, Algorithm.ADAPTIVE_2);
         segment.setMinItems(5);
         segment.setMaxItems(13);
 
@@ -182,7 +180,7 @@ public class SegmentPoolServiceImplTest {
                 .withSegmentKey(segmentKey)
                 .build());
 
-        when(mockItemPoolService.getItemPool(examId, itemConstraints, segment.getItems("ENU"), null)).thenReturn(new HashSet<>(items));
+        when(mockItemPoolService.getItemPool(examId, itemConstraints, items)).thenReturn(new HashSet<>(items));
         SegmentPoolInfo segmentPoolInfo = segmentPoolService.computeSegmentPool(examId, segment, itemConstraints, "ENU");
         assertThat(segmentPoolInfo).isNotNull();
         assertThat(segmentPoolInfo.getPoolCount()).isEqualTo(6);
@@ -197,8 +195,7 @@ public class SegmentPoolServiceImplTest {
         final UUID examId = UUID.randomUUID();
         final String assessmentId = "my-assessment-id";
         final String segmentKey = "my-segment-key";
-        AdaptiveSegment segment = new AdaptiveSegment(segmentKey);
-        segment.setSelectionAlgorithm(Algorithm.ADAPTIVE_2);
+        Segment segment = new Segment(segmentKey, Algorithm.ADAPTIVE_2);
         segment.setMinItems(5);
         segment.setMaxItems(6);
 
@@ -339,12 +336,11 @@ public class SegmentPoolServiceImplTest {
             .withSegmentKey(segmentKey)
             .build());
 
-        when(mockItemPoolService.getItemPool(examId, itemConstraints, segment.getItems("ENU"),
-            null)).thenReturn(new HashSet<>(items));
+        when(mockItemPoolService.getItemPool(examId, itemConstraints, items)).thenReturn(new HashSet<>(items));
         SegmentPoolInfo segmentPoolInfo = segmentPoolService.computeSegmentPool(examId, segment, itemConstraints, "ENU");
         assertThat(segmentPoolInfo).isNotNull();
         assertThat(segmentPoolInfo.getPoolCount()).isEqualTo(6);
-        assertThat(segmentPoolInfo.getLength()).isEqualTo(4);
+        assertThat(segmentPoolInfo.getLength()).isEqualTo(4L);
 
         List<String> itemIds = segmentPoolInfo.getItemPool().stream().map(Item::getId).collect(Collectors.toList());
         assertThat(itemIds).contains(itemId1, itemId2, excludedStrandItemId, ftItemId);
