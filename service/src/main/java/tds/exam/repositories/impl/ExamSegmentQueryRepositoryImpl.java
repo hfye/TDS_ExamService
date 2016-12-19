@@ -143,7 +143,7 @@ public class ExamSegmentQueryRepositoryImpl implements ExamSegmentQueryRepositor
         return maybeExamSegment;
     }
 
-    private Set<String> createItemSetFromString(String itemListStr) {
+    private Set<String> createItemsFromString(String itemListStr) {
         // Check if the value is an empty string - otherwise, return a set of
         return itemListStr.equals("") ? new HashSet<>() : new HashSet<>(Arrays.asList(itemListStr.split(",")));
     }
@@ -166,7 +166,7 @@ public class ExamSegmentQueryRepositoryImpl implements ExamSegmentQueryRepositor
                     .withFormCohort(rs.getString("form_cohort"))
                     .withIsSatisfied(rs.getBoolean("satisfied"))
                     .withDateExited(ResultSetMapperUtility.mapTimestampToInstant(rs, "date_exited"))
-                    .withItemPool(createItemSetFromString(rs.getString("item_pool")))
+                    .withItemPool(createItemsFromString(rs.getString("item_pool")))
                     .withPoolCount(rs.getInt("pool_count"))
                     .withCreatedAt(ResultSetMapperUtility.mapTimestampToInstant(rs, "created_at"))
                     .build();

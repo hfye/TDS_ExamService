@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSourceUtils;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import tds.common.data.mapping.ResultSetMapperUtility;
@@ -90,35 +91,7 @@ public class ExamSegmentCommandRepositoryImpl implements ExamSegmentCommandRepos
 
     @Override
     public void update(final ExamSegment segment) {
-        final SqlParameterSource parameters = new MapSqlParameterSource("examId", UuidAdapter.getBytesFromUUID(segment.getExamId()))
-                        .addValue("segmentPosition", segment.getSegmentPosition())
-                        .addValue("isSatisfied", segment.isSatisfied())
-                        .addValue("isPermeable", segment.isPermeable())
-                        .addValue("restorePermeableCondition", segment.getRestorePermeableCondition())
-                        .addValue("dateExited", ResultSetMapperUtility.mapInstantToTimestamp(segment.getDateExited()))
-                        .addValue("itemPool", String.join(",", segment.getItemPool()));
-
-        final String segmentEventQuery =
-                "INSERT INTO exam_segment_event (\n" +
-                "   exam_id, \n" +
-                "   segment_position, \n" +
-                "   satisfied, \n" +
-                "   permeable, \n" +
-                "   restore_permeable_condition, \n" +
-                "   date_exited, \n" +
-                "   item_pool \n" +
-                ") \n" +
-                "VALUES ( \n" +
-                "   :examId, \n" +
-                "   :segmentPosition, \n" +
-                "   :isSatisfied, \n" +
-                "   :isPermeable, \n" +
-                "   :restorePermeableCondition, \n" +
-                "   :dateExited, \n" +
-                "   :itemPool \n" +
-                ")";
-
-        jdbcTemplate.update(segmentEventQuery, parameters);
+        update(Arrays.asList(segment));
     }
 
     @Override

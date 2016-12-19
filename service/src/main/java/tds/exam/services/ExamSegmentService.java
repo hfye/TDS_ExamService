@@ -14,8 +14,9 @@ public interface ExamSegmentService {
     /**
      * Initializes the {@link ExamSegment}s for the {@link Exam}.
      *
-     * @param exam    The {@link Exam} to initialize segments for
+     * @param exam       The {@link Exam} to initialize segments for
      * @param assessment The {@link tds.assessment.Assessment} containing the {@link tds.assessment.Segment}s to initialize
+     * @return  The number of total items for all exam segments initialized.
      */
-     void initializeExamSegments(Exam exam, Assessment assessment);
+    int initializeExamSegments(Exam exam, Assessment assessment);
 }
