@@ -19,7 +19,6 @@ import tds.assessment.Form;
 import tds.assessment.Item;
 import tds.assessment.Segment;
 import tds.exam.Exam;
-import tds.exam.ExamAccommodation;
 import tds.exam.builder.AssessmentBuilder;
 import tds.exam.builder.ExamBuilder;
 import tds.exam.builder.SegmentBuilder;
@@ -62,9 +61,7 @@ public class ExamSegmentServiceImplTest {
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionForNoItemsFound() {
         Exam exam = new ExamBuilder().build();
-        ExamAccommodation language = new ExamAccommodation.Builder()
-            .withCode("ENU")
-            .build();
+        final String language = "ENU";
         Segment segment = new SegmentBuilder()
             .withSelectionAlgorithm(Algorithm.ADAPTIVE_2)
             .withMaxItems(5)
@@ -76,11 +73,68 @@ public class ExamSegmentServiceImplTest {
         SegmentPoolInfo segmentPoolInfo = new SegmentPoolInfo(0, 0, new HashSet<>());
 
         when(mockSegmentPoolService.computeSegmentPool(exam.getId(), segment, assessment.getItemConstraints(),
-            language.getCode())).thenReturn(segmentPoolInfo);
-        when(mockFieldTestService.isFieldTestEligible(exam, assessment, segment.getKey(), language.getCode()))
+            language)).thenReturn(segmentPoolInfo);
+        when(mockFieldTestService.isFieldTestEligible(exam, assessment, segment.getKey(), language))
             .thenReturn(true);
-        when(mockFieldTestService.selectItemGroups(exam, assessment, segment.getKey(), language.getCode()))
+        when(mockFieldTestService.selectItemGroups(exam, assessment, segment.getKey(), language))
             .thenReturn(2);
+        examSegmentService.initializeExamSegments(exam, assessment);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldThrowExceptionForNoFormFoundFromSelector() {
+        Exam exam = new ExamBuilder().build();
+        final String language = "ENU";
+        Segment segment = new SegmentBuilder()
+            .withSelectionAlgorithm(Algorithm.ADAPTIVE_2)
+            .withMaxItems(5)
+            .build();
+        Assessment assessment = new AssessmentBuilder()
+            .withSegments(Arrays.asList(segment))
+            .build();
+        // Empty segment pool should result in an error
+        SegmentPoolInfo segmentPoolInfo = new SegmentPoolInfo(0, 0, new HashSet<>());
+
+        when(mockSegmentPoolService.computeSegmentPool(exam.getId(), segment, assessment.getItemConstraints(),
+            language)).thenReturn(segmentPoolInfo);
+        when(mockFieldTestService.isFieldTestEligible(exam, assessment, segment.getKey(), language))
+            .thenReturn(true);
+        when(mockFieldTestService.selectItemGroups(exam, assessment, segment.getKey(), language))
+            .thenReturn(2);
+        when(mockFormSelector.selectForm(segment, language)).thenReturn(Optional.empty());
+        examSegmentService.initializeExamSegments(exam, assessment);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldThrowExceptionForNoFormFoundForCohort() {
+        Exam exam = new ExamBuilder().build();
+        final String language = "ENU";
+
+        Form form1 = new Form.Builder("form1")
+            .withCohort("Tatooine")
+            .withLanguage(language)
+            .build();
+        Form form2 = new Form.Builder("form2")
+            .withCohort("Korriban")
+            .withLanguage(language)
+            .build();
+        Segment segment1 = new SegmentBuilder()
+            .withSelectionAlgorithm(Algorithm.FIXED_FORM)
+            .withMaxItems(5)
+            .withForms(Arrays.asList(form1))
+            .build();
+        Segment segment2 = new SegmentBuilder()
+            .withSelectionAlgorithm(Algorithm.FIXED_FORM)
+            .withMaxItems(5)
+            .withForms(Arrays.asList(form2))
+            .build();
+        Assessment assessment = new AssessmentBuilder()
+            .withSegments(Arrays.asList(segment1, segment2))
+            .build();
+        // Empty segment pool should result in an error
+        SegmentPoolInfo segmentPoolInfo = new SegmentPoolInfo(0, 0, new HashSet<>());
+
+        when(mockFormSelector.selectForm(segment1, language)).thenReturn(Optional.of(form1));
         examSegmentService.initializeExamSegments(exam, assessment);
     }
 
@@ -174,9 +228,7 @@ public class ExamSegmentServiceImplTest {
     @Test
     public void shouldInitializeSegmentedAssessmentWithNoItemsNoFieldTestAdaptive() {
         Exam exam = new ExamBuilder().build();
-        ExamAccommodation language = new ExamAccommodation.Builder()
-            .withCode("ENU")
-            .build();
+        final String language = "ENU";
         Segment segment1 = new SegmentBuilder()
             .withKey("segment1-key")
             .withSelectionAlgorithm(Algorithm.ADAPTIVE_2)
@@ -198,27 +250,27 @@ public class ExamSegmentServiceImplTest {
 
         // ExamSeg 1
         when(mockSegmentPoolService.computeSegmentPool(exam.getId(), segment1, assessment.getItemConstraints(),
-            language.getCode()))
+            language))
             .thenReturn(segmentPoolInfo1);
-        when(mockFieldTestService.isFieldTestEligible(exam, assessment, segment1.getKey(), language.getCode()))
+        when(mockFieldTestService.isFieldTestEligible(exam, assessment, segment1.getKey(), language))
             .thenReturn(false);
         // ExamSeg 2
         when(mockSegmentPoolService.computeSegmentPool(exam.getId(), segment2, assessment.getItemConstraints(),
-            language.getCode()))
+            language))
             .thenReturn(segmentPoolInfo2);
-        when(mockFieldTestService.isFieldTestEligible(exam, assessment, segment2.getKey(), language.getCode()))
+        when(mockFieldTestService.isFieldTestEligible(exam, assessment, segment2.getKey(), language))
             .thenReturn(false);
 
         int totalItems = examSegmentService.initializeExamSegments(exam, assessment);
         assertThat(totalItems).isEqualTo(segmentPoolInfo1.getPoolCount());
         // ExamSeg 1
         verify(mockSegmentPoolService).computeSegmentPool(exam.getId(), segment1, assessment.getItemConstraints(),
-            language.getCode());
-        verify(mockFieldTestService).isFieldTestEligible(exam, assessment, segment1.getKey(), language.getCode());
+            language);
+        verify(mockFieldTestService).isFieldTestEligible(exam, assessment, segment1.getKey(), language);
         // ExamSeg 2
         verify(mockSegmentPoolService).computeSegmentPool(exam.getId(), segment2, assessment.getItemConstraints(),
-            language.getCode());
-        verify(mockFieldTestService).isFieldTestEligible(exam, assessment, segment2.getKey(), language.getCode());
+            language);
+        verify(mockFieldTestService).isFieldTestEligible(exam, assessment, segment2.getKey(), language);
 
         verify(mockExamSegmentCommandRepository).insert(examSegmentCaptor.capture());
         List<ExamSegment> examSegments = examSegmentCaptor.getValue();
@@ -287,9 +339,7 @@ public class ExamSegmentServiceImplTest {
     @Test
     public void shouldInitializeNonSegAssessmentNoFieldTestAdaptive() {
         Exam exam = new ExamBuilder().build();
-        ExamAccommodation language = new ExamAccommodation.Builder()
-            .withCode("ENU")
-            .build();
+        final String language = "ENU";
         Segment segment = new SegmentBuilder()
             .withSelectionAlgorithm(Algorithm.ADAPTIVE_2)
             .build();
@@ -305,15 +355,15 @@ public class ExamSegmentServiceImplTest {
             )));
 
         when(mockSegmentPoolService.computeSegmentPool(exam.getId(), segment, assessment.getItemConstraints(),
-            language.getCode()))
+            language))
             .thenReturn(segmentPoolInfo);
-        when(mockFieldTestService.isFieldTestEligible(exam, assessment, segment.getKey(), language.getCode()))
+        when(mockFieldTestService.isFieldTestEligible(exam, assessment, segment.getKey(), language))
             .thenReturn(false);
         int totalItems = examSegmentService.initializeExamSegments(exam, assessment);
         assertThat(totalItems).isEqualTo(segmentPoolInfo.getPoolCount());
         verify(mockSegmentPoolService).computeSegmentPool(exam.getId(), segment, assessment.getItemConstraints(),
-            language.getCode());
-        verify(mockFieldTestService).isFieldTestEligible(exam, assessment, segment.getKey(), language.getCode());
+            language);
+        verify(mockFieldTestService).isFieldTestEligible(exam, assessment, segment.getKey(), language);
 
         verify(mockExamSegmentCommandRepository).insert(examSegmentCaptor.capture());
         List<ExamSegment> examSegments = examSegmentCaptor.getValue();
@@ -335,9 +385,7 @@ public class ExamSegmentServiceImplTest {
     @Test
     public void shouldInitializeNonSegAssessmentWithFieldTestAdaptiveMaxItemsNotEqualToPool() {
         Exam exam = new ExamBuilder().build();
-        ExamAccommodation language = new ExamAccommodation.Builder()
-            .withCode("ENU")
-            .build();
+        final String language = "ENU";
         Segment segment = new SegmentBuilder()
             .withSelectionAlgorithm(Algorithm.ADAPTIVE_2)
             .withMaxItems(7)
@@ -354,15 +402,15 @@ public class ExamSegmentServiceImplTest {
             )));
 
         when(mockSegmentPoolService.computeSegmentPool(exam.getId(), segment, assessment.getItemConstraints(),
-            language.getCode()))
+            language))
             .thenReturn(segmentPoolInfo);
-        when(mockFieldTestService.isFieldTestEligible(exam, assessment, segment.getKey(), language.getCode()))
+        when(mockFieldTestService.isFieldTestEligible(exam, assessment, segment.getKey(), language))
             .thenReturn(true);
         int totalItems = examSegmentService.initializeExamSegments(exam, assessment);
         assertThat(totalItems).isEqualTo(segmentPoolInfo.getPoolCount());
         verify(mockSegmentPoolService).computeSegmentPool(exam.getId(), segment, assessment.getItemConstraints(),
-            language.getCode());
-        verify(mockFieldTestService).isFieldTestEligible(exam, assessment, segment.getKey(), language.getCode());
+            language);
+        verify(mockFieldTestService).isFieldTestEligible(exam, assessment, segment.getKey(), language);
 
         verify(mockExamSegmentCommandRepository).insert(examSegmentCaptor.capture());
         List<ExamSegment> examSegments = examSegmentCaptor.getValue();

@@ -69,7 +69,6 @@ public class ExamSegmentServiceImpl implements ExamSegmentService {
             Set<String> itemPoolIds = new HashSet<>();
             int fieldTestItemCount = 0;
             int poolCount;
-            Optional<Form> maybeSelectedForm;
             Form selectedForm = null;
             SegmentPoolInfo segmentPoolInfo = null;
 
@@ -79,17 +78,24 @@ public class ExamSegmentServiceImpl implements ExamSegmentService {
             if (Algorithm.FIXED_FORM == segment.getSelectionAlgorithm()) {
                 /* If no form cohort is defined, this is likely the first form being selected */
                 if (formCohort == null) {
-                    maybeSelectedForm = formSelector.selectForm(segment, exam.getLanguageCode());
+                    Optional<Form> maybeSelectedForm = formSelector.selectForm(segment, exam.getLanguageCode());
 
                     if (!maybeSelectedForm.isPresent()) {
-                        throw new IllegalArgumentException(String.format("Could not select a form for segment '%s' and language '%s'.",
+                        throw new IllegalStateException(String.format("Could not select a form for segment '%s' and language '%s'.",
                             segment.getKey(), exam.getLanguageCode()));
                     }
 
                     selectedForm = maybeSelectedForm.get();
                     formCohort = selectedForm.getCohort();
                 } else {
-                    selectedForm = segment.getForm(exam.getLanguageCode(), formCohort);
+                    com.google.common.base.Optional<Form> maybeSelectedForm;
+                    maybeSelectedForm = segment.getForm(exam.getLanguageCode(), formCohort);
+
+                    if (!maybeSelectedForm.isPresent()) {
+                        throw new IllegalStateException(String.format("Could not select a form for segment '%s' with " +
+                                "language '%s' and cohort '%s'.", segment.getKey(), exam.getLanguageCode(), formCohort));
+                    }
+                    selectedForm = maybeSelectedForm.get();
                 }
 
                 poolCount = selectedForm.getLength();
