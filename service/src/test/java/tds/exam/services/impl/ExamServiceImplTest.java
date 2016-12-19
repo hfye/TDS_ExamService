@@ -45,7 +45,6 @@ import tds.exam.repositories.HistoryQueryRepository;
 import tds.exam.services.AssessmentService;
 import tds.exam.services.ConfigService;
 import tds.exam.services.ExamAccommodationService;
-import tds.exam.services.ExamSegmentService;
 import tds.exam.services.ExamService;
 import tds.exam.services.SessionService;
 import tds.exam.services.StudentService;
@@ -103,9 +102,6 @@ public class ExamServiceImplTest {
     @Mock
     private ExamStatusQueryRepository mockExamStatusQueryRepository;
 
-    @Mock
-    private ExamSegmentService mockExamSegmentService;
-
     private ExamService examService;
 
     @Before
@@ -115,7 +111,6 @@ public class ExamServiceImplTest {
             mockHistoryRepository,
             mockSessionService,
             mockStudentService,
-            mockExamSegmentService,
             mockAssessmentService,
             mockTimeLimitConfigurationService,
             mockConfigService,
