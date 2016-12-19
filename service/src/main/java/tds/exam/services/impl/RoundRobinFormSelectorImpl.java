@@ -16,10 +16,10 @@ import tds.exam.services.FormSelector;
 @Component
 public class RoundRobinFormSelectorImpl implements FormSelector {
     // Keeps track of the index of the next form to assign for a segment
-    private Cache<String, FormIndex> formIndexMap;
+    private Cache<String, FormIndex> formIndexCache;
 
     public RoundRobinFormSelectorImpl() {
-        formIndexMap = CacheBuilder.newBuilder()
+        formIndexCache = CacheBuilder.newBuilder()
             .expireAfterAccess(1, TimeUnit.DAYS)
             .build();
     }
@@ -44,10 +44,10 @@ public class RoundRobinFormSelectorImpl implements FormSelector {
     private int selectNextIndex(String segmentKey, int formSize) {
         int index = 0;
 
-        if (!formIndexMap.asMap().containsKey((segmentKey))) {
-            formIndexMap.put(segmentKey, new FormIndex());
+        if (!formIndexCache.asMap().containsKey((segmentKey))) {
+            formIndexCache.put(segmentKey, new FormIndex());
         } else {
-            index = formIndexMap.getIfPresent(segmentKey).getNext(formSize);
+            index = formIndexCache.getIfPresent(segmentKey).getNext(formSize);
         }
 
         return index;
