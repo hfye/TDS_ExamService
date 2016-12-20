@@ -1,7 +1,6 @@
 package tds.exam.services.impl;
 
 import org.joda.time.Instant;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -10,21 +9,11 @@ import tds.assessment.Assessment;
 import tds.assessment.Item;
 import tds.assessment.Segment;
 import tds.exam.Exam;
-import tds.exam.repositories.FieldTestItemGroupQueryRepository;
 import tds.exam.services.FieldTestService;
-import tds.exam.services.ItemPoolService;
 import tds.session.ExternalSessionConfiguration;
 
 @Service
 public class FieldTestServiceImpl implements FieldTestService {
-//    private final FieldTestItemGroupQueryRepository fieldTestItemGroupQueryRepository;
-//    private final ItemPoolService itemPoolService;
-//
-//    @Autowired TODO: Autowire this once FieldTestServiceImpl.selectItemGroups is implemented
-//    public FieldTestServiceImpl(FieldTestItemGroupQueryRepository queryRepository, ItemPoolService itemPoolService) {
-//        this. fieldTestItemGroupQueryRepository = queryRepository;
-//        this.itemPoolService = itemPoolService;
-//    }
 
     @Override
     public boolean isFieldTestEligible(Exam exam, Assessment assessment, String segmentKey, String languageCode) {
