@@ -14,6 +14,7 @@ public class Exam {
     private String assessmentId;
     private long studentId;
     private int attempts;
+    private int maxItems;
     private ExamStatusCode status;
     private String statusChangeReason;
     private String clientName;
@@ -24,6 +25,7 @@ public class Exam {
     private Instant dateScored;
     private Instant dateCompleted;
     private Instant createdAt;
+    private Instant expireFrom;
     private String loginSSID;
     private String studentName;
     private Instant dateJoined;
@@ -31,6 +33,7 @@ public class Exam {
     private String assessmentAlgorithm;
     private String assessmentKey;
     private String environment;
+    private String languageCode;
     private boolean segmented;
     private int abnormalStarts;
     private boolean waitingForSegmentApproval;
@@ -43,6 +46,7 @@ public class Exam {
         private String assessmentId;
         private long studentId;
         private int attempts;
+        private int maxItems;
         private ExamStatusCode status;
         private String statusChangeReason;
         private String clientName;
@@ -53,6 +57,7 @@ public class Exam {
         private Instant createdAt;
         private Instant dateScored;
         private Instant dateCompleted;
+        private Instant expireFrom;
         private String loginSSID;
         private String studentName;
         private Instant dateJoined;
@@ -60,6 +65,7 @@ public class Exam {
         private String assessmentAlgorithm;
         private String assessmentKey;
         private String environment;
+        private String languageCode;
         private boolean segmented;
         private int abnormalStarts;
         private boolean waitingForSegmentApproval;
@@ -136,6 +142,11 @@ public class Exam {
             return this;
         }
 
+        public Builder withMaxItems(int maxItems) {
+            this.maxItems = maxItems;
+            return this;
+        }
+
         public Builder withStatus(ExamStatusCode newStatus) {
             status = newStatus;
             return this;
@@ -186,6 +197,11 @@ public class Exam {
             return this;
         }
 
+        public Builder withExpireFrom(Instant expireFrom) {
+            this.expireFrom = expireFrom;
+            return this;
+        }
+
         public Builder withAbnormalStarts(int abnormalStarts) {
             this.abnormalStarts = abnormalStarts;
             return this;
@@ -201,6 +217,11 @@ public class Exam {
             return this;
         }
 
+        public Builder withLanguageCode(String languageCode) {
+            this.languageCode = languageCode;
+            return this;
+        }
+
         public Builder fromExam(Exam exam) {
             id = exam.id;
             sessionId = exam.sessionId;
@@ -208,6 +229,7 @@ public class Exam {
             assessmentId = exam.assessmentId;
             studentId = exam.studentId;
             attempts = exam.attempts;
+            maxItems = exam.maxItems;
             status = exam.status;
             statusChangeReason = exam.statusChangeReason;
             subject = exam.subject;
@@ -218,6 +240,7 @@ public class Exam {
             dateScored = exam.dateScored;
             createdAt = exam.createdAt;
             dateCompleted = exam.dateCompleted;
+            expireFrom = exam.expireFrom;
             loginSSID = exam.loginSSID;
             studentName = exam.studentName;
             dateJoined = exam.dateJoined;
@@ -229,6 +252,7 @@ public class Exam {
             abnormalStarts = exam.abnormalStarts;
             waitingForSegmentApproval = exam.waitingForSegmentApproval;
             currentSegmentPosition = exam.currentSegmentPosition;
+            languageCode = exam.languageCode;
             return this;
         }
 
@@ -244,6 +268,7 @@ public class Exam {
         assessmentId = builder.assessmentId;
         studentId = builder.studentId;
         attempts = builder.attempts;
+        maxItems = builder.maxItems;
         status = builder.status;
         statusChangeReason = builder.statusChangeReason;
         subject = builder.subject;
@@ -254,6 +279,7 @@ public class Exam {
         dateScored = builder.dateScored;
         createdAt = builder.createdAt;
         dateCompleted = builder.dateCompleted;
+        expireFrom = builder.expireFrom;
         loginSSID = builder.loginSSID;
         studentName = builder.studentName;
         dateJoined = builder.dateJoined;
@@ -265,6 +291,7 @@ public class Exam {
         abnormalStarts = builder.abnormalStarts;
         waitingForSegmentApproval = builder.waitingForSegmentApproval;
         currentSegmentPosition = builder.currentSegmentPosition;
+        languageCode = builder.languageCode;
     }
 
     /**
@@ -310,6 +337,13 @@ public class Exam {
      */
     public int getAttempts() {
         return attempts;
+    }
+
+    /**
+     * @return The maximum number of items in the exam
+     */
+    public int getMaxItems() {
+        return maxItems;
     }
 
     /**
@@ -387,6 +421,13 @@ public class Exam {
     }
 
     /**
+     * @return The date and time of when the exam expires from.
+     */
+    public Instant getExpireFrom() {
+        return expireFrom;
+    }
+
+    /**
      * @return the student key of the student taking the exam
      */
     public String getLoginSSID() {
@@ -434,6 +475,8 @@ public class Exam {
     public String getEnvironment() {
         return environment;
     }
+
+    public String getLanguageCode() { return languageCode; }
 
     /**
      * @return {@code true} associated assessment is segmented

@@ -58,6 +58,9 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
             "   e.segmented,\n" +
             "   ee.attempts, \n" +
             "   ee.status, \n" +
+            "   ee.max_items, \n" +
+            "   ee.expire_from, \n" +
+            "   ee.language_code, \n" +
             "   ee.status_change_reason, \n" +
             "   ee.date_deleted, \n" +
             "   ee.date_changed, \n" +
@@ -127,6 +130,9 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
                 "   ee.attempts, \n" +
                 "   ee.status, \n" +
                 "   ee.status_change_reason, \n" +
+                "   ee.max_items, \n" +
+                "   ee.expire_from, \n" +
+                "   ee.language_code, \n" +
                 "   ee.date_deleted, \n" +
                 "   ee.date_changed, \n" +
                 "   ee.date_completed, \n" +
@@ -248,6 +254,8 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
                 .withStudentId(rs.getLong("student_id"))
                 .withLoginSSID(rs.getString("login_ssid"))
                 .withStudentName(rs.getString("student_name"))
+                .withLanguageCode(rs.getString("language_code"))
+                .withMaxItems(rs.getInt("max_items"))
                 .withAttempts(rs.getInt("attempts"))
                 .withClientName(rs.getString("client_name"))
                 .withSubject(rs.getString("subject"))
@@ -258,6 +266,7 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
                 .withDateCompleted(mapTimestampToJodaInstant(rs, "date_completed"))
                 .withCreatedAt(mapTimestampToJodaInstant(rs, "created_at"))
                 .withDateJoined(mapTimestampToJodaInstant(rs, "date_joined"))
+                .withExpireFrom(mapTimestampToJodaInstant(rs, "expire_from"))
                 .withStatus(new ExamStatusCode(
                     rs.getString("status"),
                     ExamStatusStage.fromType(rs.getString("stage"))

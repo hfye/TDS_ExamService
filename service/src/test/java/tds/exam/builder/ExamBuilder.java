@@ -20,12 +20,14 @@ public class ExamBuilder {
     private String assessmentId = "assessmentId";
     private long studentId = 1L;
     private int attempts = 0;
+    private int maxItems = 6;
     private String clientName = "clientName";
     private Instant dateDeleted = null;
     private Instant dateScored = null;
     private Instant dateChanged = null;
     private Instant dateStarted = null;
     private Instant dateCompleted = null;
+    private Instant expireFrom = null;
     private ExamStatusCode status = new ExamStatusCode(STATUS_PENDING, ExamStatusStage.INUSE);
     private String subject = "ELA";
     private String studentKey = "ADV001";
@@ -35,6 +37,7 @@ public class ExamBuilder {
     private String assessmentAlgorithm = "fixedForm";
     private String assessmentKey = "(SBAC_PT)SBAC-IRP-CAT-ELA-3-Summer-2015-2016";
     private String environment = "Development";
+    private String languageCode = "ENU";
     private boolean segmented = false;
     private int abnormalStarts = 1;
     private boolean waitingForSegmentApproval = false;
@@ -58,6 +61,7 @@ public class ExamBuilder {
             .withSubject(subject)
             .withLoginSSID(studentKey)
             .withDateJoined(dateJoined)
+            .withMaxItems(maxItems)
             .withAssessmentWindowId(assessmentWindowId)
             .withStudentName(studentName)
             .withAssessmentAlgorithm(assessmentAlgorithm)
@@ -65,6 +69,8 @@ public class ExamBuilder {
             .withEnvironment(environment)
             .withSegmented(segmented)
             .withAbnormalStarts(abnormalStarts)
+            .withLanguageCode(languageCode)
+            .withExpireFrom(expireFrom)
             .withWaitingForSegmentApproval(waitingForSegmentApproval)
             .withCurrentSegmentPosition(currentSegmentPosition)
             .build();
@@ -170,6 +176,11 @@ public class ExamBuilder {
         return this;
     }
 
+    public ExamBuilder withExpireFrom(Instant expireFrom) {
+        this.expireFrom = expireFrom;
+        return this;
+    }
+
     public ExamBuilder withStatus(ExamStatusCode status) {
         this.status = status;
         return this;
@@ -177,6 +188,11 @@ public class ExamBuilder {
 
     public ExamBuilder withSubject(String subject) {
         this.subject = subject;
+        return this;
+    }
+
+    public ExamBuilder withLanguageCode(String languageCode) {
+        this.languageCode = languageCode;
         return this;
     }
 
