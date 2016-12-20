@@ -30,7 +30,7 @@ class ExamAccommodationServiceImpl implements ExamAccommodationService {
     }
 
     @Override
-    public List<ExamAccommodation> findAccommodations(UUID examId, String segmentId, String[] accommodationTypes) {
+    public List<ExamAccommodation> findAccommodations(UUID examId, String segmentId, String... accommodationTypes) {
         return examAccommodationQueryRepository.findAccommodations(examId, segmentId, accommodationTypes);
     }
 
@@ -69,5 +69,10 @@ class ExamAccommodationServiceImpl implements ExamAccommodationService {
         examAccommodationCommandRepository.insert(examAccommodations);
 
         return examAccommodations;
+    }
+
+    @Override
+    public List<ExamAccommodation> findApprovedAccommodations(UUID examId) {
+        return examAccommodationQueryRepository.findApprovedAccommodations(examId);
     }
 }
