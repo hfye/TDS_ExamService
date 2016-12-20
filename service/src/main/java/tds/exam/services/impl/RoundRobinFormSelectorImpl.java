@@ -28,17 +28,17 @@ public class RoundRobinFormSelectorImpl implements FormSelector {
     public Optional<Form> selectForm(Segment segment, String languageCode) {
         List<Form> forms = segment.getForms(languageCode);
         int index = 0;
-        Optional<Form> selectedForm = Optional.empty();
 
-        if (!forms.isEmpty()) {
-            if (forms.size() > 1) { // Round robin multi-form
-                index = selectNextIndex(segment.getKey(), forms.size());
-            }
-
-            selectedForm = Optional.of(forms.get(index));
+        if (forms.isEmpty()) {
+            return Optional.empty();
         }
 
-        return selectedForm;
+        int formSize = forms.size();
+        if (formSize > 1) { // Round robin multi-form
+            index = selectNextIndex(segment.getKey(), formSize);
+        }
+
+        return Optional.of(forms.get(index));
     }
 
     private int selectNextIndex(String segmentKey, int formSize) {

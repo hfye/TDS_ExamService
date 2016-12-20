@@ -47,46 +47,44 @@ public class RoundRobinFormSelectorImplTest {
         Segment segment = new Segment("segmentKey", Algorithm.FIXED_FORM);
         segment.setForms(Arrays.asList(enuForm1, enuForm2, enuForm3, enuForm4, esnForm));
 
-        Optional<Form> maybeRetForm1A = formSelector.selectForm(segment, languageCode);
-        assertThat(maybeRetForm1A).isPresent();
-        Form retForm1 = maybeRetForm1A.get();
+        Optional<Form> maybeRetEnuForm1A = formSelector.selectForm(segment, languageCode);
+        assertThat(maybeRetEnuForm1A).isPresent();
+        Form retForm1 = maybeRetEnuForm1A.get();
         assertThat(retForm1.getKey()).isEqualTo(enuForm1.getKey());
 
-        Optional<Form> maybeRetForm2A = formSelector.selectForm(segment, languageCode);
-        assertThat(maybeRetForm2A).isPresent();
-        Form retForm2A = maybeRetForm2A.get();
+        Optional<Form> maybeRetEnuForm2A = formSelector.selectForm(segment, languageCode);
+        assertThat(maybeRetEnuForm2A).isPresent();
+        Form retForm2A = maybeRetEnuForm2A.get();
         assertThat(retForm2A.getKey()).isEqualTo(enuForm2.getKey());
 
-        Optional<Form> maybeRetForm3A = formSelector.selectForm(segment, languageCode);
-        assertThat(maybeRetForm3A).isPresent();
-        Form retForm3A = maybeRetForm3A.get();
+        Optional<Form> maybeRetEnuForm3A = formSelector.selectForm(segment, languageCode);
+        assertThat(maybeRetEnuForm3A).isPresent();
+        Form retForm3A = maybeRetEnuForm3A.get();
         assertThat(retForm3A.getKey()).isEqualTo(enuForm3.getKey());
 
-        Optional<Form> maybeRetForm4A = formSelector.selectForm(segment, languageCode);
-        assertThat(maybeRetForm4A).isPresent();
-        Form retForm4A = maybeRetForm4A.get();
+        Optional<Form> maybeRetEnuForm4A = formSelector.selectForm(segment, languageCode);
+        assertThat(maybeRetEnuForm4A).isPresent();
+        Form retForm4A = maybeRetEnuForm4A.get();
         assertThat(retForm4A.getKey()).isEqualTo(enuForm4.getKey());
 
-        Optional<Form> maybeRetForm1B = formSelector.selectForm(segment, languageCode);
-        assertThat(maybeRetForm1B).isPresent();
-        Form retForm1B = maybeRetForm1B.get();
+        Optional<Form> maybeRetEnuForm1B = formSelector.selectForm(segment, languageCode);
+        assertThat(maybeRetEnuForm1B).isPresent();
+        Form retForm1B = maybeRetEnuForm1B.get();
         assertThat(retForm1B.getKey()).isEqualTo(enuForm1.getKey());
 
-        Optional<Form> maybeRetForm2B = formSelector.selectForm(segment, languageCode);
-        assertThat(maybeRetForm2B).isPresent();
-        Form retForm2B = maybeRetForm2B.get();
+        Optional<Form> maybeRetEnuForm2B = formSelector.selectForm(segment, languageCode);
+        assertThat(maybeRetEnuForm2B).isPresent();
+        Form retForm2B = maybeRetEnuForm2B.get();
         assertThat(retForm2B.getKey()).isEqualTo(enuForm2.getKey());
 
-        Optional<Form> maybeRetForm3B = formSelector.selectForm(segment, languageCode);
-        assertThat(maybeRetForm3B).isPresent();
-        Form retForm3B = maybeRetForm3B.get();
+        Optional<Form> maybeRetEnuForm3B = formSelector.selectForm(segment, languageCode);
+        assertThat(maybeRetEnuForm3B).isPresent();
+        Form retForm3B = maybeRetEnuForm3B.get();
         assertThat(retForm3B.getKey()).isEqualTo(enuForm3.getKey());
 
-        Optional<Form> maybeRetForm4B = formSelector.selectForm(segment, languageCode);
-        assertThat(maybeRetForm4B).isPresent();
-        Form retForm4B = maybeRetForm4B.get();
+        Optional<Form> maybeRetEnuForm4B = formSelector.selectForm(segment, languageCode);
+        assertThat(maybeRetEnuForm4B).isPresent();
+        Form retForm4B = maybeRetEnuForm4B.get();
         assertThat(retForm4B.getKey()).isEqualTo(enuForm4.getKey());
-
-
     }
 }

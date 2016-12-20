@@ -12,7 +12,7 @@ ALTER TABLE exam_event
   ADD COLUMN expire_from DATETIME(3) DEFAULT NULL;
 
 ALTER TABLE exam_event
-  ADD COLUMN max_items INT(11) DEFAULT 0;
+  ADD COLUMN max_items INT(11) DEFAULT 0 NOT NULL;
 
 ALTER TABLE exam_event
   ADD COLUMN language_code VARCHAR(50) DEFAULT NULL;

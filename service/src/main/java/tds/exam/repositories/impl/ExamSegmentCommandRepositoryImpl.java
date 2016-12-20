@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import tds.common.data.mapping.ResultSetMapperUtility;
 import tds.common.data.mysql.UuidAdapter;
@@ -35,27 +36,24 @@ public class ExamSegmentCommandRepositoryImpl implements ExamSegmentCommandRepos
      */
     @Override
     public void insert(final List<ExamSegment> segments) {
-        final List<SqlParameterSource> parameterSources = new ArrayList<>();
-        segments.forEach(segment -> {
-                SqlParameterSource parameters = new MapSqlParameterSource("examId", UuidAdapter.getBytesFromUUID(segment.getExamId()))
-                    .addValue("segmentKey", segment.getSegmentKey())
-                    .addValue("segmentId", segment.getSegmentId())
-                    .addValue("segmentPosition", segment.getSegmentPosition())
-                    .addValue("formKey", segment.getFormKey())
-                    .addValue("formId", segment.getFormId())
-                    .addValue("algorithm", segment.getAlgorithm().getType())
-                    .addValue("examItemCount", segment.getExamItemCount())
-                    .addValue("fieldTestItemCount", segment.getFieldTestItemCount())
-                    .addValue("formCohort", segment.getFormCohort())
-                    .addValue("poolCount", segment.getPoolCount())
-                    .addValue("isSatisfied", segment.isSatisfied())
-                    .addValue("isPermeable", segment.isPermeable())
-                    .addValue("restorePermeableOn", segment.getRestorePermeableCondition())
-                    .addValue("dateExited", ResultSetMapperUtility.mapInstantToTimestamp(segment.getDateExited()))
-                    .addValue("itemPool", String.join(",", segment.getItemPool()));
-
-                parameterSources.add(parameters);
-            });
+        final List<SqlParameterSource> parameterSources = segments.stream()
+            .map(segment -> new MapSqlParameterSource("examId", UuidAdapter.getBytesFromUUID(segment.getExamId()))
+                .addValue("segmentKey", segment.getSegmentKey())
+                .addValue("segmentId", segment.getSegmentId())
+                .addValue("segmentPosition", segment.getSegmentPosition())
+                .addValue("formKey", segment.getFormKey())
+                .addValue("formId", segment.getFormId())
+                .addValue("algorithm", segment.getAlgorithm().getType())
+                .addValue("examItemCount", segment.getExamItemCount())
+                .addValue("fieldTestItemCount", segment.getFieldTestItemCount())
+                .addValue("formCohort", segment.getFormCohort())
+                .addValue("poolCount", segment.getPoolCount())
+                .addValue("isSatisfied", segment.isSatisfied())
+                .addValue("isPermeable", segment.isPermeable())
+                .addValue("restorePermeableOn", segment.getRestorePermeableCondition())
+                .addValue("dateExited", ResultSetMapperUtility.mapInstantToTimestamp(segment.getDateExited()))
+                .addValue("itemPool", String.join(",", segment.getItemPool())))
+            .collect(Collectors.toList());
 
         final String segmentQuery =
                 "INSERT INTO exam_segment (\n" +
