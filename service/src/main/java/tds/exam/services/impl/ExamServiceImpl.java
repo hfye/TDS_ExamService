@@ -279,7 +279,7 @@ class ExamServiceImpl implements ExamService {
         return Optional.empty();
     }
 
-    public Response<ExamConfiguration> startExam(UUID examId) {
+    public Response<ExamConfiguration> startExam(final UUID examId) {
         ExamConfiguration examConfig = null;
 
         try {
@@ -338,7 +338,7 @@ class ExamServiceImpl implements ExamService {
         return new Response<>(examConfig);
     }
 
-    private int initializeExam(Exam exam, Assessment assessment) {
+    private int initializeExam(final Exam exam, final Assessment assessment) {
         /* TestOpportunityServiceImpl [435] + [470] */
         int testLength = examSegmentService.initializeExamSegments(exam, assessment);
         org.joda.time.Instant now = org.joda.time.Instant.now();
