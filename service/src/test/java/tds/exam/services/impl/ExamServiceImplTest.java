@@ -1313,35 +1313,46 @@ public class ExamServiceImplTest {
         examService.getApproval(approvalRequest);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldThrowExceptionForNoExamFound() {
+    @Test
+    public void shouldReturnFailureExamConfigForNoExamFound() {
         UUID examID = UUID.randomUUID();
         when(mockExamQueryRepository.getExamById(examID)).thenReturn(Optional.empty());
-        examService.startExam(examID);
+        Response<ExamConfiguration> response = examService.startExam(examID);
+        assertThat(response.getData()).isPresent();
+        ExamConfiguration retConfig = response.getData().get();
+        assertThat(retConfig.getStatus()).isEqualTo(ExamStatusCode.STATUS_FAILED);
+        assertThat(retConfig.getFailureMessage()).isNotNull();
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void shouldThrowExceptionForExamStatusNotApproved() {
+    @Test
+    public void shouldReturnFailureExamConfigForExamStatusNotApproved() {
         Exam exam = new ExamBuilder()
             .build();
         when(mockExamQueryRepository.getExamById(exam.getId())).thenReturn(Optional.of(exam));
         when(mockSessionService.findSessionById(exam.getSessionId())).thenReturn(Optional.empty());
-        examService.startExam(exam.getId());
+        Response<ExamConfiguration> response = examService.startExam(exam.getId());
+        assertThat(response.getData()).isPresent();
+        ExamConfiguration retConfig = response.getData().get();
+        assertThat(retConfig.getStatus()).isEqualTo(ExamStatusCode.STATUS_FAILED);
+        assertThat(retConfig.getFailureMessage()).isNotNull();
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldThrowExceptionForNoSessionFound() {
+    @Test
+    public void shouldReturnFailureExamConfigForNoSessionFound() {
         Exam exam = new ExamBuilder()
             .withStatus(new ExamStatusCode(ExamStatusCode.STATUS_APPROVED, ExamStatusStage.OPEN))
             .build();
         when(mockExamQueryRepository.getExamById(exam.getId())).thenReturn(Optional.of(exam));
         when(mockSessionService.findSessionById(exam.getSessionId())).thenReturn(Optional.empty());
-        examService.startExam(exam.getId());
+        Response<ExamConfiguration> response = examService.startExam(exam.getId());
+        assertThat(response.getData()).isPresent();
+        ExamConfiguration retConfig = response.getData().get();
+        assertThat(retConfig.getStatus()).isEqualTo(ExamStatusCode.STATUS_FAILED);
+        assertThat(retConfig.getFailureMessage()).isNotNull();
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldThrowExceptionForNoAssessmentFound() {
-        final String assessmentKey = "key";
+    @Test
+    public void shouldReturnFailureExamConfigForNoAssessmentFound() {
         Session session = new SessionBuilder().build();
         Exam exam = new ExamBuilder()
             .withSessionId(session.getId())
@@ -1361,10 +1372,12 @@ public class ExamServiceImplTest {
         when(mockSessionService.findExternalSessionConfigurationByClientName(exam.getClientName())).thenReturn(Optional.of(extSessionConfig));
         when(mockExamQueryRepository.getExamById(exam.getId())).thenReturn(Optional.of(exam));
         when(mockSessionService.findSessionById(exam.getSessionId())).thenReturn(Optional.of(session));
-        when(mockAssessmentService.findAssessment(exam.getClientName(), assessmentKey)).thenReturn(Optional.empty());
-        examService.startExam(exam.getId());
-
-        mockExamCommandRepository.update(any());
+        when(mockAssessmentService.findAssessment(exam.getClientName(), exam.getAssessmentKey())).thenReturn(Optional.empty());
+        Response<ExamConfiguration> response = examService.startExam(exam.getId());
+        assertThat(response.getData()).isPresent();
+        ExamConfiguration retConfig = response.getData().get();
+        assertThat(retConfig.getStatus()).isEqualTo(ExamStatusCode.STATUS_FAILED);
+        assertThat(retConfig.getFailureMessage()).isNotNull();
     }
 
     @Test
@@ -1404,11 +1417,12 @@ public class ExamServiceImplTest {
         assertThat(examConfigurationResponse.getData()).isPresent();
         ExamConfiguration examConfiguration = examConfigurationResponse.getData().get();
         assertThat(examConfiguration.getAttempt()).isEqualTo(0);
-        assertThat(examConfiguration.getContentLoadTimeout()).isEqualTo(120);
+        assertThat(examConfiguration.getContentLoadTimeoutMinutes()).isEqualTo(120);
         assertThat(examConfiguration.getExamId()).isEqualTo(exam.getId());
         assertThat(examConfiguration.getExamRestartWindowMinutes()).isEqualTo(timeLimitConfiguration.getExamRestartWindowMinutes());
-        assertThat(examConfiguration.getInterfaceTimeout()).isEqualTo(timeLimitConfiguration.getInterfaceTimeoutMinutes());
+        assertThat(examConfiguration.getInterfaceTimeoutMinutes()).isEqualTo(timeLimitConfiguration.getInterfaceTimeoutMinutes());
         assertThat(examConfiguration.getPrefetch()).isEqualTo(assessment.getPrefetch());
+
         assertThat(examConfiguration.getStartPosition()).isEqualTo(1);
         assertThat(examConfiguration.getTestLength()).isEqualTo(testLength);
 

@@ -7,11 +7,11 @@ import java.util.UUID;
  */
 public class ExamConfiguration {
     private UUID examId;
-    private int contentLoadTimeout;
-    private int interfaceTimeout;
+    private int contentLoadTimeoutMinutes;
+    private int interfaceTimeoutMinutes;
     private int examRestartWindowMinutes;
+    private int requestInterfaceTimeoutMinutes;
     private int prefetch;
-    private int requestInterfaceTimeout;
     private int attempt;
     private int startPosition;
     private String status;
@@ -23,11 +23,11 @@ public class ExamConfiguration {
 
     private ExamConfiguration(Builder builder) {
         this.examId = builder.examId;
-        this.contentLoadTimeout = builder.contentLoadTimeout;
-        this.interfaceTimeout = builder.interfaceTimeout;
+        this.contentLoadTimeoutMinutes = builder.contentLoadTimeoutMinutes;
+        this.interfaceTimeoutMinutes = builder.interfaceTimeoutMinutes;
         this.examRestartWindowMinutes = builder.examRestartWindowMinutes;
+        this.requestInterfaceTimeoutMinutes = builder.requestInterfaceTimeoutMinutes;
         this.prefetch = builder.prefetch;
-        this.requestInterfaceTimeout = builder.requestInterfaceTimeout;
         this.attempt = builder.attempt;
         this.startPosition = builder.startPosition;
         this.status = builder.status;
@@ -38,11 +38,11 @@ public class ExamConfiguration {
 
     public static class Builder {
         private UUID examId;
-        private int contentLoadTimeout;
-        private int interfaceTimeout;
+        private int contentLoadTimeoutMinutes;
+        private int interfaceTimeoutMinutes;
         private int examRestartWindowMinutes;
+        private int requestInterfaceTimeoutMinutes;
         private int prefetch;
-        private int requestInterfaceTimeout;
         private int attempt;
         private int startPosition;
         private String status;
@@ -56,12 +56,12 @@ public class ExamConfiguration {
         }
 
         public Builder withContentLoadTimeout(int contentLoadTimeout) {
-            this.contentLoadTimeout = contentLoadTimeout;
+            this.contentLoadTimeoutMinutes = contentLoadTimeout;
             return this;
         }
 
         public Builder withInterfaceTimeout(int interfaceTimeout) {
-            this.interfaceTimeout = interfaceTimeout;
+            this.interfaceTimeoutMinutes = interfaceTimeout;
             return this;
         }
 
@@ -76,7 +76,7 @@ public class ExamConfiguration {
         }
 
         public Builder withRequestInterfaceTimeout(int requestInterfaceTimeout) {
-            this.requestInterfaceTimeout = requestInterfaceTimeout;
+            this.requestInterfaceTimeoutMinutes = requestInterfaceTimeout;
             return this;
         }
 
@@ -125,15 +125,15 @@ public class ExamConfiguration {
     /**
      * @return The timeout period of content load
      */
-    public int getContentLoadTimeout() {
-        return contentLoadTimeout;
+    public int getContentLoadTimeoutMinutes() {
+        return contentLoadTimeoutMinutes;
     }
 
     /**
      * @return The timeout period for interface inactivity
      */
-    public int getInterfaceTimeout() {
-        return interfaceTimeout;
+    public int getInterfaceTimeoutMinutes() {
+        return interfaceTimeoutMinutes;
     }
 
     /**
@@ -153,8 +153,8 @@ public class ExamConfiguration {
     /**
      * @return The timeout period for proctor approval requests
      */
-    public int getRequestInterfaceTimeout() {
-        return requestInterfaceTimeout;
+    public int getRequestInterfaceTimeoutMinutes() {
+        return requestInterfaceTimeoutMinutes;
     }
 
     /**
