@@ -187,9 +187,6 @@ class ExamServiceImpl implements ExamService {
             : new Response<>(new ExamApproval(approvalRequest.getExamId(), exam.getStatus(), exam.getStatusChangeReason()));
     }
 
-    /**
-     * @inheritDoc
-     */
     @Override
     public Optional<Double> getInitialAbility(Exam exam, Assessment assessment) {
         Optional<Double> ability = Optional.empty();
@@ -279,6 +276,7 @@ class ExamServiceImpl implements ExamService {
         return Optional.empty();
     }
 
+    @Override
     public Response<ExamConfiguration> startExam(final UUID examId) {
         ExamConfiguration examConfig = null;
 
