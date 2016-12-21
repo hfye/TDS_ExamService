@@ -7,6 +7,7 @@ public class ExamStatusCode {
     public static final String STATUS_SUSPENDED = "suspended";
     public static final String STATUS_DENIED = "denied";
     public static final String STATUS_STARTED = "started";
+    public static final String STATUS_FAILED = "failed";
 
     private String status;
     private ExamStatusStage stage;

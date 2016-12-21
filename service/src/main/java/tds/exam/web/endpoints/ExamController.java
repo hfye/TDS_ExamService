@@ -63,11 +63,12 @@ public class ExamController {
         return new ResponseEntity<>(exam, headers, HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/{id}/start", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/{examId}/start", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Response<ExamConfiguration>> startExam(@PathVariable final UUID examId) {
         Response<ExamConfiguration> examConfiguration = examService.startExam(examId);
 
-        if (!examConfiguration.getData().isPresent() || examConfiguration.getErrors().isPresent()) {
+        if ((examConfiguration.getData().isPresent() && examConfiguration.getData().get().getFailureMessage() != null)
+            || !examConfiguration.getData().isPresent() || examConfiguration.getErrors().isPresent()) {
             return new ResponseEntity<>(examConfiguration, HttpStatus.UNPROCESSABLE_ENTITY);
         }
 

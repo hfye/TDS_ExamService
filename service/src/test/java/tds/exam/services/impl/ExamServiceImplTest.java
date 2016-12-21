@@ -1420,7 +1420,7 @@ public class ExamServiceImplTest {
         assertThat(updatedExam.getDateStarted()).isLessThan(Instant.now());
         assertThat(updatedExam.getDateChanged()).isLessThan(Instant.now());
         assertThat(updatedExam.getExpireFrom()).isLessThan(Instant.now());
-        assertThat(updatedExam.getStatus().getStage()).isEqualTo(ExamStatusStage.IN_PROGRESS);
+        assertThat(updatedExam.getStatus().getStage()).isEqualTo(ExamStatusStage.INPROGRESS);
         assertThat(updatedExam.getStatus().getStatus()).isEqualTo(ExamStatusCode.STATUS_STARTED);
     }
 

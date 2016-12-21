@@ -282,43 +282,57 @@ class ExamServiceImpl implements ExamService {
     public Response<ExamConfiguration> startExam(UUID examId) {
         ExamConfiguration examConfig = null;
 
-        Exam exam = examQueryRepository.getExamById(examId)
-            .orElseThrow(() -> new IllegalArgumentException(String.format("No exam found for id %s", examId)));
+        try {
+            Exam exam = examQueryRepository.getExamById(examId)
+                .orElseThrow(() -> new IllegalArgumentException(String.format("No exam found for id %s", examId)));
 
-        /* TestOpportunityServiceImpl [155] No need to go any further, so moving before service calls */
-        if (!exam.getStatus().getStatus().equalsIgnoreCase(ExamStatusCode.STATUS_APPROVED)) {
-            throw new IllegalStateException(String.format("Cannot start exam %s: Exam was not approved.", examId));
-        }
+            /* TestOpportunityServiceImpl [155] No need to go any further, so moving before service calls */
+            if (!exam.getStatus().getStatus().equalsIgnoreCase(ExamStatusCode.STATUS_APPROVED)) {
+                throw new IllegalStateException(String.format("Cannot start exam %s: Exam was not approved.", examId));
+            }
 
-        /* TestOpportunityServiceImpl [131] */
-        Session session = sessionService.findSessionById(exam.getSessionId())
-            .orElseThrow(() -> new IllegalArgumentException(String.format("No session found for session id %s", exam.getSessionId())));
+            /* TestOpportunityServiceImpl [131] */
+            Session session = sessionService.findSessionById(exam.getSessionId())
+                .orElseThrow(() -> new IllegalArgumentException(String.format("No session found for session id %s", exam.getSessionId())));
 
-        /* StudentDLL [5269] / TestOpportunityServiceImpl [137] */
-        Optional<ValidationError> maybeAccessViolation = verifyAccess(new ApprovalRequest(examId, session.getId(), exam.getBrowserId(), exam.getClientName()), exam);
-        if (maybeAccessViolation.isPresent()) {
-            return new Response<ExamConfiguration>(maybeAccessViolation.get());
-        }
-        /* TestOpportunityServiceImpl [147] */
-        Assessment assessment = assessmentService.findAssessment(exam.getClientName(), exam.getAssessmentKey())
-            .orElseThrow(() -> new IllegalArgumentException(String.format("No assessment found for assessment key '%s'.", exam.getAssessmentKey())));
+            /* StudentDLL [5269] / TestOpportunityServiceImpl [137] */
+            Optional<ValidationError> maybeAccessViolation = verifyAccess(new ApprovalRequest(examId, session.getId(), exam.getBrowserId(), exam.getClientName()), exam);
+            if (maybeAccessViolation.isPresent()) {
+                return new Response<ExamConfiguration>(maybeAccessViolation.get());
+            }
+            /* TestOpportunityServiceImpl [147] */
+            Assessment assessment = assessmentService.findAssessment(exam.getClientName(), exam.getAssessmentKey())
+                .orElseThrow(() -> new IllegalArgumentException(String.format("No assessment found for assessment key '%s'.", exam.getAssessmentKey())));
 
-        TimeLimitConfiguration timeLimitConfiguration =
-            timeLimitConfigurationService.findTimeLimitConfiguration(exam.getClientName(), assessment.getAssessmentId())
-                .orElseThrow(() ->
-                    new IllegalArgumentException(String.format("No time limit configurations found for clientName '%s' and assessment id '%s'.",
-                        exam.getClientName(), assessment.getAssessmentId())));
+            TimeLimitConfiguration timeLimitConfiguration =
+                timeLimitConfigurationService.findTimeLimitConfiguration(exam.getClientName(), assessment.getAssessmentId())
+                    .orElseThrow(() ->
+                        new IllegalArgumentException(String.format("No time limit configurations found for clientName '%s' and assessment id '%s'.",
+                            exam.getClientName(), assessment.getAssessmentId())));
 
-        /* StudentDLL [5344] Skipping getInitialAbility() call here - the ability is retrieved in legacy but never set on TestConfig */
-        int testLength;
+            /* StudentDLL [5344] Skipping getInitialAbility() call here - the ability is retrieved in legacy but never set on TestConfig */
+            int testLength;
 
-        if (exam.getDateStarted() == null) { // Start a new exam
-            // Initialize the segments in the exam and get the testlength.
-            testLength = initializeExam(exam, assessment);
+            if (exam.getDateStarted() == null) { // Start a new exam
+                // Initialize the segments in the exam and get the testlength.
+                testLength = initializeExam(exam, assessment);
             /* StudentDLL [5367] and TestOppServiceImpl [167] */
-            examConfig = ExamConfigurationHelper.getNew(examId, assessment, timeLimitConfiguration, testLength);
-        } else { //Restart the most recent exam
-            //TODO: Start existing opportunity [TDS-350]
+                examConfig = ExamConfigurationHelper.getNew(examId, assessment, timeLimitConfiguration, testLength);
+            } else { //Restart the most recent exam
+                //TODO: Start existing opportunity [TDS-350]
+            }
+        } catch (IllegalArgumentException e) {
+            examConfig = new ExamConfiguration.Builder()
+                .withExamId(examId)
+                .withStatus(ExamStatusCode.STATUS_FAILED)
+                .withFailureMessage(e.getMessage())
+                .build();
+        } catch (IllegalStateException e) {
+            examConfig = new ExamConfiguration.Builder()
+                .withExamId(examId)
+                .withStatus(ExamStatusCode.STATUS_FAILED)
+                .withFailureMessage(e.getMessage())
+                .build();
         }
 
         return new Response<>(examConfig);

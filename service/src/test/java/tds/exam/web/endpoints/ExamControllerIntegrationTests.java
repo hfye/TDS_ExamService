@@ -14,8 +14,10 @@ import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
 
+import tds.common.Response;
 import tds.common.web.advice.ExceptionAdvice;
 import tds.exam.Exam;
+import tds.exam.ExamConfiguration;
 import tds.exam.builder.ExamBuilder;
 import tds.exam.services.ExamService;
 
@@ -23,6 +25,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 

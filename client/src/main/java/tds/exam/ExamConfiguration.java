@@ -15,6 +15,7 @@ public class ExamConfiguration {
     private int attempt;
     private int startPosition;
     private String status;
+    private String failureMessage;
     private int testLength;
     private boolean validateCompleteness;
 
@@ -30,6 +31,7 @@ public class ExamConfiguration {
         this.attempt = builder.attempt;
         this.startPosition = builder.startPosition;
         this.status = builder.status;
+        this.failureMessage = builder.failureMessage;
         this.testLength = builder.testLength;
         this.validateCompleteness = builder.validateCompleteness;
     }
@@ -44,11 +46,9 @@ public class ExamConfiguration {
         private int attempt;
         private int startPosition;
         private String status;
+        private String failureMessage;
         private int testLength;
         private boolean validateCompleteness;
-
-        public Builder() {
-        }
 
         public Builder withExamId(UUID examId) {
             this.examId = examId;
@@ -105,51 +105,96 @@ public class ExamConfiguration {
             return this;
         }
 
+        public Builder withFailureMessage(String failureMessage) {
+            this.failureMessage = failureMessage;
+            return this;
+        }
+
         public ExamConfiguration build() {
             return new ExamConfiguration(this);
         }
     }
 
+    /**
+     * @return The id of the exam
+     */
     public UUID getExamId() {
         return examId;
     }
 
+    /**
+     * @return The timeout period of content load
+     */
     public int getContentLoadTimeout() {
         return contentLoadTimeout;
     }
 
+    /**
+     * @return The timeout period for interface inactivity
+     */
     public int getInterfaceTimeout() {
         return interfaceTimeout;
     }
 
+    /**
+     * @return The number of minutes after an exam is started where an exam is eligible for a resume
+     */
     public int getExamRestartWindowMinutes() {
         return examRestartWindowMinutes;
     }
 
+    /**
+     * @return The number of pages to prefetch for the exam
+     */
     public int getPrefetch() {
         return prefetch;
     }
 
+    /**
+     * @return The timeout period for proctor approval requests
+     */
     public int getRequestInterfaceTimeout() {
         return requestInterfaceTimeout;
     }
 
+    /**
+     * @return The attempt number
+     */
     public int getAttempt() {
         return attempt;
     }
 
+    /**
+     * @return The position of the exam to begin from
+     */
     public int getStartPosition() {
         return startPosition;
     }
 
+    /**
+     * @return The status of the exam
+     */
     public String getStatus() {
         return status;
     }
 
+    /**
+     * @return An optional failure message if the exam fails to start
+     */
+    public String getFailureMessage() {
+        return failureMessage;
+    }
+
+    /**
+     * @return The number of items in an exam
+     */
     public int getTestLength() {
         return testLength;
     }
 
+    /**
+     * @return Flag for validating that all exam items are answered before submission
+     */
     public boolean isValidateCompleteness() {
         return validateCompleteness;
     }
