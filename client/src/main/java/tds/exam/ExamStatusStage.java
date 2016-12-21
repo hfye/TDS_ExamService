@@ -4,6 +4,7 @@ package tds.exam;
  * Exam status also has an associated stage.
  */
 public enum ExamStatusStage {
+    INPROGRESS("inprogress"),
     INUSE("inuse"),
     CLOSED("closed"),
     INACTIVE("inactive"),

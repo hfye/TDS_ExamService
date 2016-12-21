@@ -24,6 +24,7 @@ import tds.config.TimeLimitConfiguration;
 import tds.exam.ApprovalRequest;
 import tds.exam.Exam;
 import tds.exam.ExamApproval;
+import tds.exam.ExamConfiguration;
 import tds.exam.ExamStatusCode;
 import tds.exam.ExamStatusStage;
 import tds.exam.OpenExamRequest;
@@ -36,10 +37,12 @@ import tds.exam.repositories.HistoryQueryRepository;
 import tds.exam.services.AssessmentService;
 import tds.exam.services.ConfigService;
 import tds.exam.services.ExamAccommodationService;
+import tds.exam.services.ExamSegmentService;
 import tds.exam.services.ExamService;
 import tds.exam.services.SessionService;
 import tds.exam.services.StudentService;
 import tds.exam.services.TimeLimitConfigurationService;
+import tds.exam.utils.ExamConfigurationHelper;
 import tds.session.ExternalSessionConfiguration;
 import tds.session.Session;
 import tds.student.RtsStudentPackageAttribute;
@@ -64,6 +67,7 @@ class ExamServiceImpl implements ExamService {
     private final HistoryQueryRepository historyQueryRepository;
     private final SessionService sessionService;
     private final StudentService studentService;
+    private final ExamSegmentService examSegmentService;
     private final AssessmentService assessmentService;
     private final TimeLimitConfigurationService timeLimitConfigurationService;
     private final ConfigService configService;
@@ -75,6 +79,7 @@ class ExamServiceImpl implements ExamService {
                            HistoryQueryRepository historyQueryRepository,
                            SessionService sessionService,
                            StudentService studentService,
+                           ExamSegmentService examSegmentService,
                            AssessmentService assessmentService,
                            TimeLimitConfigurationService timeLimitConfigurationService,
                            ConfigService configService,
@@ -85,6 +90,7 @@ class ExamServiceImpl implements ExamService {
         this.historyQueryRepository = historyQueryRepository;
         this.sessionService = sessionService;
         this.studentService = studentService;
+        this.examSegmentService = examSegmentService;
         this.assessmentService = assessmentService;
         this.timeLimitConfigurationService = timeLimitConfigurationService;
         this.configService = configService;
@@ -271,6 +277,71 @@ class ExamServiceImpl implements ExamService {
         }
 
         return Optional.empty();
+    }
+
+    public Response<ExamConfiguration> startExam(UUID examId) {
+        ExamConfiguration examConfig = null;
+
+        Exam exam = examQueryRepository.getExamById(examId)
+            .orElseThrow(() -> new IllegalArgumentException(String.format("No exam found for id %s", examId)));
+
+        /* TestOpportunityServiceImpl [155] No need to go any further, so moving before service calls */
+        if (!exam.getStatus().getStatus().equalsIgnoreCase(ExamStatusCode.STATUS_APPROVED)) {
+            throw new IllegalStateException(String.format("Cannot start exam %s: Exam was not approved.", examId));
+        }
+
+        /* TestOpportunityServiceImpl [131] */
+        Session session = sessionService.findSessionById(exam.getSessionId())
+            .orElseThrow(() -> new IllegalArgumentException(String.format("No session found for session id %s", exam.getSessionId())));
+
+        /* StudentDLL [5269] / TestOpportunityServiceImpl [137] */
+        Optional<ValidationError> maybeAccessViolation = verifyAccess(new ApprovalRequest(examId, session.getId(), exam.getBrowserId(), exam.getClientName()), exam);
+        if (maybeAccessViolation.isPresent()) {
+            return new Response<ExamConfiguration>(maybeAccessViolation.get());
+        }
+        /* TestOpportunityServiceImpl [147] */
+        Assessment assessment = assessmentService.findAssessment(exam.getClientName(), exam.getAssessmentKey())
+            .orElseThrow(() -> new IllegalArgumentException(String.format("No assessment found for assessment key '%s'.", exam.getAssessmentKey())));
+
+        TimeLimitConfiguration timeLimitConfiguration =
+            timeLimitConfigurationService.findTimeLimitConfiguration(exam.getClientName(), assessment.getAssessmentId())
+                .orElseThrow(() ->
+                    new IllegalArgumentException(String.format("No time limit configurations found for clientName '%s' and assessment id '%s'.",
+                        exam.getClientName(), assessment.getAssessmentId())));
+
+        /* StudentDLL [5344] Skipping getInitialAbility() call here - the ability is retrieved in legacy but never set on TestConfig */
+        int testLength;
+
+        if (exam.getDateStarted() == null) { // Start a new exam
+            // Initialize the segments in the exam and get the testlength.
+            testLength = initializeExam(exam, assessment);
+            /* StudentDLL [5367] and TestOppServiceImpl [167] */
+            examConfig = ExamConfigurationHelper.getNew(examId, assessment, timeLimitConfiguration, testLength);
+        } else { //Restart the most recent exam
+            //TODO: Start existing opportunity [TDS-350]
+        }
+
+        return new Response<>(examConfig);
+    }
+
+    private int initializeExam(Exam exam, Assessment assessment) {
+        /* TestOpportunityServiceImpl [435] + [470] */
+        int testLength = examSegmentService.initializeExamSegments(exam, assessment);
+        org.joda.time.Instant now = org.joda.time.Instant.now();
+        /* TODO: Skipping [451-469] until Simulation mode is investigated and implemented
+         * The testoppabilityestimate table written to here is only read from in SimDLL.java  */
+        Exam initializedExam = new Exam.Builder()
+            .fromExam(exam)
+            .withStatus(new ExamStatusCode(ExamStatusCode.STATUS_STARTED, ExamStatusStage.INPROGRESS))
+            .withDateStarted(now)
+            .withDateChanged(now)
+            .withExpireFrom(now)
+            .withMaxItems(testLength)
+            .build();
+
+        examCommandRepository.update(initializedExam);
+
+        return testLength;
     }
 
     private Response<Exam> createExam(OpenExamRequest openExamRequest, Session session, Assessment assessment, ExternalSessionConfiguration externalSessionConfiguration, Exam previousExam) {

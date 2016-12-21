@@ -20,6 +20,7 @@ import tds.common.web.exceptions.NotFoundException;
 import tds.exam.ApprovalRequest;
 import tds.exam.Exam;
 import tds.exam.ExamApproval;
+import tds.exam.ExamConfiguration;
 import tds.exam.OpenExamRequest;
 import tds.exam.services.ExamService;
 
@@ -60,6 +61,24 @@ public class ExamController {
         final HttpHeaders headers = new HttpHeaders();
         headers.add("Location", link.getHref());
         return new ResponseEntity<>(exam, headers, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/{id}/start", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<Response<ExamConfiguration>> startExam(@PathVariable final UUID examId) {
+        Response<ExamConfiguration> examConfiguration = examService.startExam(examId);
+
+        if (!examConfiguration.getData().isPresent() || examConfiguration.getErrors().isPresent()) {
+            return new ResponseEntity<>(examConfiguration, HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+
+        Link link = linkTo(
+            methodOn(ExamController.class)
+                .getExamById(examConfiguration.getData().get().getExamId()))
+            .withSelfRel();
+
+        final HttpHeaders headers = new HttpHeaders();
+        headers.add("Location", link.getHref());
+        return new ResponseEntity<>(examConfiguration, headers, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/{id}/get-approval", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)

@@ -7,6 +7,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -29,10 +31,12 @@ import tds.exam.ApprovalRequest;
 import tds.exam.Exam;
 import tds.exam.ExamApproval;
 import tds.exam.ExamApprovalStatus;
+import tds.exam.ExamConfiguration;
 import tds.exam.ExamStatusCode;
 import tds.exam.ExamStatusStage;
 import tds.exam.OpenExamRequest;
 import tds.exam.builder.AssessmentBuilder;
+import tds.exam.builder.ExamBuilder;
 import tds.exam.builder.ExternalSessionConfigurationBuilder;
 import tds.exam.builder.OpenExamRequestBuilder;
 import tds.exam.builder.SessionBuilder;
@@ -45,6 +49,7 @@ import tds.exam.repositories.HistoryQueryRepository;
 import tds.exam.services.AssessmentService;
 import tds.exam.services.ConfigService;
 import tds.exam.services.ExamAccommodationService;
+import tds.exam.services.ExamSegmentService;
 import tds.exam.services.ExamService;
 import tds.exam.services.SessionService;
 import tds.exam.services.StudentService;
@@ -55,6 +60,7 @@ import tds.student.RtsStudentPackageAttribute;
 import tds.student.Student;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -102,6 +108,12 @@ public class ExamServiceImplTest {
     @Mock
     private ExamStatusQueryRepository mockExamStatusQueryRepository;
 
+    @Mock
+    private ExamSegmentService mockExamSegmentService;
+
+    @Captor
+    private ArgumentCaptor<Exam> examArgumentCaptor;
+
     private ExamService examService;
 
     @Before
@@ -111,6 +123,7 @@ public class ExamServiceImplTest {
             mockHistoryRepository,
             mockSessionService,
             mockStudentService,
+            mockExamSegmentService,
             mockAssessmentService,
             mockTimeLimitConfigurationService,
             mockConfigService,
@@ -1298,6 +1311,117 @@ public class ExamServiceImplTest {
         ApprovalRequest approvalRequest = new ApprovalRequest(examId, sessionId, browserKey, clientName);
 
         examService.getApproval(approvalRequest);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldThrowExceptionForNoExamFound() {
+        UUID examID = UUID.randomUUID();
+        when(mockExamQueryRepository.getExamById(examID)).thenReturn(Optional.empty());
+        examService.startExam(examID);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldThrowExceptionForExamStatusNotApproved() {
+        Exam exam = new ExamBuilder()
+            .build();
+        when(mockExamQueryRepository.getExamById(exam.getId())).thenReturn(Optional.of(exam));
+        when(mockSessionService.findSessionById(exam.getSessionId())).thenReturn(Optional.empty());
+        examService.startExam(exam.getId());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldThrowExceptionForNoSessionFound() {
+        Exam exam = new ExamBuilder()
+            .withStatus(new ExamStatusCode(ExamStatusCode.STATUS_APPROVED, ExamStatusStage.OPEN))
+            .build();
+        when(mockExamQueryRepository.getExamById(exam.getId())).thenReturn(Optional.of(exam));
+        when(mockSessionService.findSessionById(exam.getSessionId())).thenReturn(Optional.empty());
+        examService.startExam(exam.getId());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldThrowExceptionForNoAssessmentFound() {
+        final String assessmentKey = "key";
+        Session session = new SessionBuilder().build();
+        Exam exam = new ExamBuilder()
+            .withSessionId(session.getId())
+            .withStatus(new ExamStatusCode(ExamStatusCode.STATUS_APPROVED, ExamStatusStage.OPEN))
+            .build();
+        TimeLimitConfiguration timeLimitConfiguration = new TimeLimitConfiguration.Builder()
+            .withTaCheckinTimeMinutes(3)
+            .withAssessmentId("assessmentId")
+            .withExamDelayDays(2)
+            .withExamRestartWindowMinutes(2)
+            .withInterfaceTimeoutMinutes(4)
+            .withRequestInterfaceTimeoutMinutes(5)
+            .build();
+        ExternalSessionConfiguration extSessionConfig = new ExternalSessionConfiguration(exam.getClientName(), SIMULATION_ENVIRONMENT, 0, 0, 0, 0);
+        when(mockTimeLimitConfigurationService.findTimeLimitConfiguration(exam.getClientName(), "assessmentId"))
+            .thenReturn(Optional.of(timeLimitConfiguration));
+        when(mockSessionService.findExternalSessionConfigurationByClientName(exam.getClientName())).thenReturn(Optional.of(extSessionConfig));
+        when(mockExamQueryRepository.getExamById(exam.getId())).thenReturn(Optional.of(exam));
+        when(mockSessionService.findSessionById(exam.getSessionId())).thenReturn(Optional.of(session));
+        when(mockAssessmentService.findAssessment(exam.getClientName(), assessmentKey)).thenReturn(Optional.empty());
+        examService.startExam(exam.getId());
+
+        mockExamCommandRepository.update(any());
+    }
+
+    @Test
+    public void shouldStartNewExam() {
+        Session session = new SessionBuilder().build();
+        Exam exam = new ExamBuilder()
+            .withStatus(new ExamStatusCode(ExamStatusCode.STATUS_APPROVED, ExamStatusStage.OPEN))
+            .withSessionId(session.getId())
+            .build();
+        Assessment assessment = new AssessmentBuilder().build();
+        TimeLimitConfiguration timeLimitConfiguration = new TimeLimitConfiguration.Builder()
+            .withTaCheckinTimeMinutes(3)
+            .withAssessmentId(assessment.getAssessmentId())
+            .withExamDelayDays(2)
+            .withExamRestartWindowMinutes(2)
+            .withInterfaceTimeoutMinutes(4)
+            .withRequestInterfaceTimeoutMinutes(5)
+            .build();
+        ExternalSessionConfiguration extSessionConfig = new ExternalSessionConfiguration(exam.getClientName(), SIMULATION_ENVIRONMENT, 0, 0, 0, 0);
+        final int testLength = 10;
+
+        when(mockSessionService.findExternalSessionConfigurationByClientName(exam.getClientName())).thenReturn(Optional.of(extSessionConfig));
+        when(mockExamQueryRepository.getExamById(exam.getId())).thenReturn(Optional.of(exam));
+        when(mockSessionService.findSessionById(exam.getSessionId())).thenReturn(Optional.of(session));
+        when(mockAssessmentService.findAssessment(exam.getClientName(), exam.getAssessmentKey()))
+            .thenReturn(Optional.of(assessment));
+        when(mockTimeLimitConfigurationService.findTimeLimitConfiguration(exam.getClientName(), assessment.getAssessmentId()))
+            .thenReturn(Optional.of(timeLimitConfiguration));
+        when(mockExamSegmentService.initializeExamSegments(exam, assessment)).thenReturn(testLength);
+        Response<ExamConfiguration> examConfigurationResponse = examService.startExam(exam.getId());
+        verify(mockExamQueryRepository).getExamById(exam.getId());
+        verify(mockSessionService).findSessionById(exam.getSessionId());
+        verify(mockAssessmentService).findAssessment(exam.getClientName(), exam.getAssessmentKey());
+        verify(mockTimeLimitConfigurationService).findTimeLimitConfiguration(exam.getClientName(), assessment.getAssessmentId());
+        verify(mockExamCommandRepository).update(examArgumentCaptor.capture());
+
+        assertThat(examConfigurationResponse.getData()).isPresent();
+        ExamConfiguration examConfiguration = examConfigurationResponse.getData().get();
+        assertThat(examConfiguration.getAttempt()).isEqualTo(0);
+        assertThat(examConfiguration.getContentLoadTimeout()).isEqualTo(120);
+        assertThat(examConfiguration.getExamId()).isEqualTo(exam.getId());
+        assertThat(examConfiguration.getExamRestartWindowMinutes()).isEqualTo(timeLimitConfiguration.getExamRestartWindowMinutes());
+        assertThat(examConfiguration.getInterfaceTimeout()).isEqualTo(timeLimitConfiguration.getInterfaceTimeoutMinutes());
+        assertThat(examConfiguration.getPrefetch()).isEqualTo(assessment.getPrefetch());
+        assertThat(examConfiguration.getStartPosition()).isEqualTo(1);
+        assertThat(examConfiguration.getTestLength()).isEqualTo(testLength);
+
+        Exam updatedExam = examArgumentCaptor.getValue();
+        assertThat(updatedExam).isNotNull();
+        assertThat(updatedExam.getAttempts()).isEqualTo(0);
+        assertThat(updatedExam.getId()).isEqualTo(exam.getId());
+        assertThat(updatedExam.getMaxItems()).isEqualTo(testLength);
+        assertThat(updatedExam.getDateStarted()).isLessThan(Instant.now());
+        assertThat(updatedExam.getDateChanged()).isLessThan(Instant.now());
+        assertThat(updatedExam.getExpireFrom()).isLessThan(Instant.now());
+        assertThat(updatedExam.getStatus().getStage()).isEqualTo(ExamStatusStage.IN_PROGRESS);
+        assertThat(updatedExam.getStatus().getStatus()).isEqualTo(ExamStatusCode.STATUS_STARTED);
     }
 
     private Exam createExam(UUID sessionId, UUID thisExamId, String assessmentId, String clientName, long studentId) {
