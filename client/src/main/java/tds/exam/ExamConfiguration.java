@@ -6,7 +6,7 @@ import java.util.UUID;
  * Class containing exam configuration data
  */
 public class ExamConfiguration {
-    private UUID examId;
+    private Exam exam;
     private int contentLoadTimeoutMinutes;
     private int interfaceTimeoutMinutes;
     private int examRestartWindowMinutes;
@@ -22,7 +22,7 @@ public class ExamConfiguration {
     private ExamConfiguration() {}
 
     private ExamConfiguration(Builder builder) {
-        this.examId = builder.examId;
+        this.exam = builder.exam;
         this.contentLoadTimeoutMinutes = builder.contentLoadTimeoutMinutes;
         this.interfaceTimeoutMinutes = builder.interfaceTimeoutMinutes;
         this.examRestartWindowMinutes = builder.examRestartWindowMinutes;
@@ -37,7 +37,7 @@ public class ExamConfiguration {
     }
 
     public static class Builder {
-        private UUID examId;
+        private Exam exam;
         private int contentLoadTimeoutMinutes;
         private int interfaceTimeoutMinutes;
         private int examRestartWindowMinutes;
@@ -50,8 +50,8 @@ public class ExamConfiguration {
         private int testLength;
         private boolean validateCompleteness;
 
-        public Builder withExamId(UUID examId) {
-            this.examId = examId;
+        public Builder withExam(Exam exam) {
+            this.exam = exam;
             return this;
         }
 
@@ -116,10 +116,10 @@ public class ExamConfiguration {
     }
 
     /**
-     * @return The id of the exam
+     * @return The exam that was started
      */
-    public UUID getExamId() {
-        return examId;
+    public Exam getExam() {
+        return exam;
     }
 
     /**

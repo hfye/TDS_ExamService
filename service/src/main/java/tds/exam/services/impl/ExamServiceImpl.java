@@ -42,7 +42,6 @@ import tds.exam.services.ExamService;
 import tds.exam.services.SessionService;
 import tds.exam.services.StudentService;
 import tds.exam.services.TimeLimitConfigurationService;
-import tds.exam.utils.ExamConfigurationHelper;
 import tds.session.ExternalSessionConfiguration;
 import tds.session.Session;
 import tds.student.RtsStudentPackageAttribute;
@@ -61,6 +60,7 @@ import static tds.student.RtsStudentPackageAttribute.EXTERNAL_ID;
 @Service
 class ExamServiceImpl implements ExamService {
     private static final Logger LOG = LoggerFactory.getLogger(ExamServiceImpl.class);
+    private static final int CONTENT_LOAD_TIMEOUT = 120;
 
     private final ExamQueryRepository examQueryRepository;
     private final ExamCommandRepository examCommandRepository;
@@ -279,64 +279,65 @@ class ExamServiceImpl implements ExamService {
     @Override
     public Response<ExamConfiguration> startExam(final UUID examId) {
         ExamConfiguration examConfig = null;
+        Optional<Exam> maybeExam = examQueryRepository.getExamById(examId);
+        if (!maybeExam.isPresent()) {
+            return new Response<ExamConfiguration>(new ValidationError(
+                ExamStatusCode.STATUS_FAILED, String.format("No exam found for id %s", examId)
+            ));
+        }
+        Exam exam = maybeExam.get();
 
-        try {
-            Exam exam = examQueryRepository.getExamById(examId)
-                .orElseThrow(() -> new IllegalArgumentException(String.format("No exam found for id %s", examId)));
+        /* TestOpportunityServiceImpl [155] No need to go any further, so moving before service calls */
+        if (!exam.getStatus().getStatus().equalsIgnoreCase(ExamStatusCode.STATUS_APPROVED)) {
+            return new Response<ExamConfiguration>(new ValidationError(
+                ExamStatusCode.STATUS_FAILED, String.format("Cannot start exam %s: Exam was not approved.", examId)
+            ));
+        }
 
-            /* TestOpportunityServiceImpl [155] No need to go any further, so moving before service calls */
-            if (!exam.getStatus().getStatus().equalsIgnoreCase(ExamStatusCode.STATUS_APPROVED)) {
-                throw new IllegalStateException(String.format("Cannot start exam %s: Exam was not approved.", examId));
-            }
+        /* TestOpportunityServiceImpl [131] */
+        Optional<Session> maybeSession = sessionService.findSessionById(exam.getSessionId());
+        if (!maybeSession.isPresent()) {
+            return new Response<ExamConfiguration>(new ValidationError(
+                ExamStatusCode.STATUS_FAILED, String.format("No session found for session id %s", exam.getSessionId())));
+        }
+        Session session = maybeSession.get();
 
-            /* TestOpportunityServiceImpl [131] */
-            Session session = sessionService.findSessionById(exam.getSessionId())
-                .orElseThrow(() -> new IllegalArgumentException(String.format("No session found for session id %s", exam.getSessionId())));
+        /* StudentDLL [5269] / TestOpportunityServiceImpl [137] */
+        Optional<ValidationError> maybeAccessViolation = verifyAccess(new ApprovalRequest(examId, session.getId(), exam.getBrowserId(), exam.getClientName()), exam);
+        if (maybeAccessViolation.isPresent()) {
+            return new Response<ExamConfiguration>(maybeAccessViolation.get());
+        }
+        /* TestOpportunityServiceImpl [147] */
+        Optional<Assessment> maybeAssessment = assessmentService.findAssessment(exam.getClientName(), exam.getAssessmentKey());
+        if (!maybeAssessment.isPresent()) {
+            return new Response<ExamConfiguration>(new ValidationError(
+                ExamStatusCode.STATUS_FAILED, String.format("No assessment found for assessment key '%s'.", exam.getAssessmentKey())
+            ));
+        }
+        Assessment assessment = maybeAssessment.get();
 
-            /* StudentDLL [5269] / TestOpportunityServiceImpl [137] */
-            Optional<ValidationError> maybeAccessViolation = verifyAccess(new ApprovalRequest(examId, session.getId(), exam.getBrowserId(), exam.getClientName()), exam);
-            if (maybeAccessViolation.isPresent()) {
-                return new Response<ExamConfiguration>(maybeAccessViolation.get());
-            }
-            /* TestOpportunityServiceImpl [147] */
-            Assessment assessment = assessmentService.findAssessment(exam.getClientName(), exam.getAssessmentKey())
-                .orElseThrow(() -> new IllegalArgumentException(String.format("No assessment found for assessment key '%s'.", exam.getAssessmentKey())));
+        TimeLimitConfiguration timeLimitConfiguration =
+            timeLimitConfigurationService.findTimeLimitConfiguration(exam.getClientName(), assessment.getAssessmentId())
+                .orElseThrow(() ->
+                    new IllegalStateException(String.format("No time limit configurations found for clientName '%s' and assessment id '%s'.",
+                        exam.getClientName(), assessment.getAssessmentId())));
 
-            TimeLimitConfiguration timeLimitConfiguration =
-                timeLimitConfigurationService.findTimeLimitConfiguration(exam.getClientName(), assessment.getAssessmentId())
-                    .orElseThrow(() ->
-                        new IllegalArgumentException(String.format("No time limit configurations found for clientName '%s' and assessment id '%s'.",
-                            exam.getClientName(), assessment.getAssessmentId())));
+        /* StudentDLL [5344] Skipping getInitialAbility() call here - the ability is retrieved in legacy but never set on TestConfig */
+        int testLength;
 
-            /* StudentDLL [5344] Skipping getInitialAbility() call here - the ability is retrieved in legacy but never set on TestConfig */
-            int testLength;
-
-            if (exam.getDateStarted() == null) { // Start a new exam
-                // Initialize the segments in the exam and get the testlength.
-                testLength = initializeExam(exam, assessment);
+        if (exam.getDateStarted() == null) { // Start a new exam
+            // Initialize the segments in the exam and get the testlength.
+            Exam initializedExam = initializeExam(exam, assessment);
             /* StudentDLL [5367] and TestOppServiceImpl [167] */
-                examConfig = ExamConfigurationHelper.getNew(examId, assessment, timeLimitConfiguration, testLength);
-            } else { //Restart the most recent exam
-                //TODO: Start existing opportunity [TDS-350]
-            }
-        } catch (IllegalArgumentException e) {
-            examConfig = new ExamConfiguration.Builder()
-                .withExamId(examId)
-                .withStatus(ExamStatusCode.STATUS_FAILED)
-                .withFailureMessage(e.getMessage())
-                .build();
-        } catch (IllegalStateException e) {
-            examConfig = new ExamConfiguration.Builder()
-                .withExamId(examId)
-                .withStatus(ExamStatusCode.STATUS_FAILED)
-                .withFailureMessage(e.getMessage())
-                .build();
+            examConfig = initializeDefaultExamConfiguration(initializedExam, assessment, timeLimitConfiguration);
+        } else { //Restart the most recent exam
+            //TODO: Start existing opportunity [TDS-350]
         }
 
         return new Response<>(examConfig);
     }
 
-    private int initializeExam(final Exam exam, final Assessment assessment) {
+    private Exam initializeExam(final Exam exam, final Assessment assessment) {
         /* TestOpportunityServiceImpl [435] + [470] */
         int testLength = examSegmentService.initializeExamSegments(exam, assessment);
         org.joda.time.Instant now = org.joda.time.Instant.now();
@@ -344,7 +345,7 @@ class ExamServiceImpl implements ExamService {
          * The testoppabilityestimate table written to here is only read from in SimDLL.java  */
         Exam initializedExam = new Exam.Builder()
             .fromExam(exam)
-            .withStatus(new ExamStatusCode(ExamStatusCode.STATUS_STARTED, ExamStatusStage.INPROGRESS))
+            .withStatus(new ExamStatusCode(ExamStatusCode.STATUS_STARTED, ExamStatusStage.IN_PROGRESS))
             .withDateStarted(now)
             .withDateChanged(now)
             .withExpireFrom(now)
@@ -353,7 +354,27 @@ class ExamServiceImpl implements ExamService {
 
         examCommandRepository.update(initializedExam);
 
-        return testLength;
+        return initializedExam;
+    }
+
+    /*
+        This method mimics the legacy TestConfigHelper.getNew().
+        - scoreByTds has been removed as it is unused by the application.
+    */
+    private static ExamConfiguration initializeDefaultExamConfiguration(Exam exam, Assessment assessment, TimeLimitConfiguration timeLimitConfiguration) {
+        return new ExamConfiguration.Builder()
+            .withExam(exam)
+            .withContentLoadTimeout(CONTENT_LOAD_TIMEOUT)
+            .withInterfaceTimeout(timeLimitConfiguration.getInterfaceTimeoutMinutes())
+            .withExamRestartWindowMinutes(timeLimitConfiguration.getExamRestartWindowMinutes())
+            .withPrefetch(assessment.getPrefetch())
+            .withValidateCompleteness(assessment.isValidateCompleteness())
+            .withRequestInterfaceTimeout(timeLimitConfiguration.getRequestInterfaceTimeoutMinutes())
+            .withAttempt(0)
+            .withStartPosition(1)
+            .withStatus(ExamStatusCode.STATUS_STARTED)
+            .withTestLength(exam.getMaxItems())
+            .build();
     }
 
     private Response<Exam> createExam(OpenExamRequest openExamRequest, Session session, Assessment assessment, ExternalSessionConfiguration externalSessionConfiguration, Exam previousExam) {
@@ -494,7 +515,7 @@ class ExamServiceImpl implements ExamService {
         //If for some reason the previous exam is in an inuse stage then we still allow the prevous exam to
         //be opened but we mark it as an abnormal start.  This should not happen very often as it most likely
         //is some type of bug in the legacy Web app and its processing of requests.
-        int abnormalIncrement = ExamStatusStage.INUSE.equals(previousExam.getStatus().getStage()) ? 1 : 0;
+        int abnormalIncrement = ExamStatusStage.IN_USE.equals(previousExam.getStatus().getStage()) ? 1 : 0;
 
         Exam currentExam = new Exam.Builder()
             .fromExam(previousExam)

@@ -30,6 +30,7 @@ import tds.exam.ExamConfiguration;
 import tds.exam.ExamStatusCode;
 import tds.exam.ExamStatusStage;
 import tds.exam.OpenExamRequest;
+import tds.exam.builder.ExamBuilder;
 import tds.exam.builder.OpenExamRequestBuilder;
 import tds.exam.error.ValidationErrorCode;
 import tds.exam.services.ExamService;
@@ -128,18 +129,18 @@ public class ExamControllerTest {
 
     @Test
     public void shouldReturnExamConfiguration() {
-        UUID examId = UUID.randomUUID();
+        Exam exam = new ExamBuilder().build();
         ExamConfiguration mockExamConfig = new ExamConfiguration.Builder()
-            .withExamId(examId)
+            .withExam(exam)
             .withStatus("started")
             .build();
-        when(mockExamService.startExam(examId)).thenReturn(
+        when(mockExamService.startExam(exam.getId())).thenReturn(
             new Response<>(mockExamConfig));
 
-        ResponseEntity<Response<ExamConfiguration>> response = controller.startExam(examId);
-        verify(mockExamService).startExam(examId);
+        ResponseEntity<Response<ExamConfiguration>> response = controller.startExam(exam.getId());
+        verify(mockExamService).startExam(exam.getId());
 
-        assertThat(response.getBody().getData().get().getExamId()).isEqualTo(examId);
+        assertThat(response.getBody().getData().get().getExam().getId()).isEqualTo(exam.getId());
         assertThat(response.getBody().getData().get().getStatus()).isEqualTo("started");
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().getErrors()).isNotPresent();

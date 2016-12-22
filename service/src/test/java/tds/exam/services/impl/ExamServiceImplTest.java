@@ -68,7 +68,7 @@ import static tds.config.ClientSystemFlag.ALLOW_ANONYMOUS_STUDENT_FLAG_TYPE;
 import static tds.exam.ExamStatusCode.STATUS_APPROVED;
 import static tds.exam.ExamStatusCode.STATUS_PENDING;
 import static tds.exam.ExamStatusCode.STATUS_SUSPENDED;
-import static tds.exam.ExamStatusStage.INUSE;
+import static tds.exam.ExamStatusStage.IN_USE;
 import static tds.exam.ExamStatusStage.OPEN;
 import static tds.session.ExternalSessionConfiguration.DEVELOPMENT_ENVIRONMENT;
 import static tds.session.ExternalSessionConfiguration.SIMULATION_ENVIRONMENT;
@@ -661,7 +661,7 @@ public class ExamServiceImplTest {
         when(mockSessionService.findSessionById(previousSession.getId())).thenReturn(Optional.of(previousSession));
         when(mockSessionService.findExternalSessionConfigurationByClientName(request.getClientName())).thenReturn(Optional.of(externalSessionConfiguration));
         when(mockAssessmentService.findAssessment(request.getClientName(), request.getAssessmentKey())).thenReturn(Optional.of(assessment));
-        when(mockExamStatusQueryRepository.findExamStatusCode(STATUS_SUSPENDED)).thenReturn(new ExamStatusCode(STATUS_SUSPENDED, INUSE));
+        when(mockExamStatusQueryRepository.findExamStatusCode(STATUS_SUSPENDED)).thenReturn(new ExamStatusCode(STATUS_SUSPENDED, IN_USE));
 
         Response<Exam> examResponse = examService.openExam(request);
 
@@ -1318,10 +1318,10 @@ public class ExamServiceImplTest {
         UUID examID = UUID.randomUUID();
         when(mockExamQueryRepository.getExamById(examID)).thenReturn(Optional.empty());
         Response<ExamConfiguration> response = examService.startExam(examID);
-        assertThat(response.getData()).isPresent();
-        ExamConfiguration retConfig = response.getData().get();
-        assertThat(retConfig.getStatus()).isEqualTo(ExamStatusCode.STATUS_FAILED);
-        assertThat(retConfig.getFailureMessage()).isNotNull();
+        assertThat(response.getErrors()).isPresent();
+        ValidationError error = response.getErrors().get()[0];
+        assertThat(error.getCode()).isEqualTo(ExamStatusCode.STATUS_FAILED);
+        assertThat(error.getMessage()).isNotNull();
     }
 
     @Test
@@ -1331,10 +1331,10 @@ public class ExamServiceImplTest {
         when(mockExamQueryRepository.getExamById(exam.getId())).thenReturn(Optional.of(exam));
         when(mockSessionService.findSessionById(exam.getSessionId())).thenReturn(Optional.empty());
         Response<ExamConfiguration> response = examService.startExam(exam.getId());
-        assertThat(response.getData()).isPresent();
-        ExamConfiguration retConfig = response.getData().get();
-        assertThat(retConfig.getStatus()).isEqualTo(ExamStatusCode.STATUS_FAILED);
-        assertThat(retConfig.getFailureMessage()).isNotNull();
+        assertThat(response.getErrors()).isPresent();
+        ValidationError error = response.getErrors().get()[0];
+        assertThat(error.getCode()).isEqualTo(ExamStatusCode.STATUS_FAILED);
+        assertThat(error.getMessage()).isNotNull();
     }
 
     @Test
@@ -1345,10 +1345,10 @@ public class ExamServiceImplTest {
         when(mockExamQueryRepository.getExamById(exam.getId())).thenReturn(Optional.of(exam));
         when(mockSessionService.findSessionById(exam.getSessionId())).thenReturn(Optional.empty());
         Response<ExamConfiguration> response = examService.startExam(exam.getId());
-        assertThat(response.getData()).isPresent();
-        ExamConfiguration retConfig = response.getData().get();
-        assertThat(retConfig.getStatus()).isEqualTo(ExamStatusCode.STATUS_FAILED);
-        assertThat(retConfig.getFailureMessage()).isNotNull();
+        assertThat(response.getErrors()).isPresent();
+        ValidationError error = response.getErrors().get()[0];
+        assertThat(error.getCode()).isEqualTo(ExamStatusCode.STATUS_FAILED);
+        assertThat(error.getMessage()).isNotNull();
     }
 
     @Test
@@ -1374,10 +1374,10 @@ public class ExamServiceImplTest {
         when(mockSessionService.findSessionById(exam.getSessionId())).thenReturn(Optional.of(session));
         when(mockAssessmentService.findAssessment(exam.getClientName(), exam.getAssessmentKey())).thenReturn(Optional.empty());
         Response<ExamConfiguration> response = examService.startExam(exam.getId());
-        assertThat(response.getData()).isPresent();
-        ExamConfiguration retConfig = response.getData().get();
-        assertThat(retConfig.getStatus()).isEqualTo(ExamStatusCode.STATUS_FAILED);
-        assertThat(retConfig.getFailureMessage()).isNotNull();
+        assertThat(response.getErrors()).isPresent();
+        ValidationError error = response.getErrors().get()[0];
+        assertThat(error.getCode()).isEqualTo(ExamStatusCode.STATUS_FAILED);
+        assertThat(error.getMessage()).isNotNull();
     }
 
     @Test
@@ -1418,7 +1418,7 @@ public class ExamServiceImplTest {
         ExamConfiguration examConfiguration = examConfigurationResponse.getData().get();
         assertThat(examConfiguration.getAttempt()).isEqualTo(0);
         assertThat(examConfiguration.getContentLoadTimeoutMinutes()).isEqualTo(120);
-        assertThat(examConfiguration.getExamId()).isEqualTo(exam.getId());
+        assertThat(examConfiguration.getExam().getId()).isEqualTo(exam.getId());
         assertThat(examConfiguration.getExamRestartWindowMinutes()).isEqualTo(timeLimitConfiguration.getExamRestartWindowMinutes());
         assertThat(examConfiguration.getInterfaceTimeoutMinutes()).isEqualTo(timeLimitConfiguration.getInterfaceTimeoutMinutes());
         assertThat(examConfiguration.getPrefetch()).isEqualTo(assessment.getPrefetch());
@@ -1434,7 +1434,7 @@ public class ExamServiceImplTest {
         assertThat(updatedExam.getDateStarted()).isLessThan(Instant.now());
         assertThat(updatedExam.getDateChanged()).isLessThan(Instant.now());
         assertThat(updatedExam.getExpireFrom()).isLessThan(Instant.now());
-        assertThat(updatedExam.getStatus().getStage()).isEqualTo(ExamStatusStage.INPROGRESS);
+        assertThat(updatedExam.getStatus().getStage()).isEqualTo(ExamStatusStage.IN_PROGRESS);
         assertThat(updatedExam.getStatus().getStatus()).isEqualTo(ExamStatusCode.STATUS_STARTED);
     }
 

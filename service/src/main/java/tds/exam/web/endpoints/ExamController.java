@@ -63,23 +63,15 @@ public class ExamController {
         return new ResponseEntity<>(exam, headers, HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/{examId}/start", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/{examId}/start", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Response<ExamConfiguration>> startExam(@PathVariable final UUID examId) {
         Response<ExamConfiguration> examConfiguration = examService.startExam(examId);
 
-        if ((examConfiguration.getData().isPresent() && examConfiguration.getData().get().getFailureMessage() != null)
-            || !examConfiguration.getData().isPresent() || examConfiguration.getErrors().isPresent()) {
+        if (examConfiguration.getErrors().isPresent()) {
             return new ResponseEntity<>(examConfiguration, HttpStatus.UNPROCESSABLE_ENTITY);
         }
 
-        Link link = linkTo(
-            methodOn(ExamController.class)
-                .getExamById(examConfiguration.getData().get().getExamId()))
-            .withSelfRel();
-
-        final HttpHeaders headers = new HttpHeaders();
-        headers.add("Location", link.getHref());
-        return new ResponseEntity<>(examConfiguration, headers, HttpStatus.OK);
+        return ResponseEntity.ok(examConfiguration);
     }
 
     @RequestMapping(value = "/{id}/get-approval", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)

@@ -50,7 +50,7 @@ public interface ExamService {
      * Starts a new or existing exam.
      *
      * @param examId The exam to start
-     * @return The exams configuration
+     * @return {@link tds.common.Response<tds.exam.Exam>} containing the exam's configuration or errors.
      */
     Response<ExamConfiguration> startExam(UUID examId);
 
