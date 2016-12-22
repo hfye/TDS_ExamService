@@ -60,7 +60,6 @@ import tds.student.RtsStudentPackageAttribute;
 import tds.student.Student;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -1386,6 +1385,8 @@ public class ExamServiceImplTest {
         Exam exam = new ExamBuilder()
             .withStatus(new ExamStatusCode(ExamStatusCode.STATUS_APPROVED, ExamStatusStage.OPEN))
             .withSessionId(session.getId())
+            .withDateChanged(Instant.now().minus(50000))
+            .withDateStarted(null)
             .build();
         Assessment assessment = new AssessmentBuilder().build();
         TimeLimitConfiguration timeLimitConfiguration = new TimeLimitConfiguration.Builder()
@@ -1427,14 +1428,13 @@ public class ExamServiceImplTest {
         assertThat(examConfiguration.getTestLength()).isEqualTo(testLength);
 
         // Sleep a bit to prevent intermittent test failures due to timing
-        Thread.sleep(100);
         Exam updatedExam = examArgumentCaptor.getValue();
         assertThat(updatedExam).isNotNull();
         assertThat(updatedExam.getAttempts()).isEqualTo(0);
         assertThat(updatedExam.getId()).isEqualTo(exam.getId());
         assertThat(updatedExam.getMaxItems()).isEqualTo(testLength);
-        assertThat(updatedExam.getDateStarted()).isLessThan(Instant.now());
-        assertThat(updatedExam.getDateChanged()).isLessThan(Instant.now());
+        assertThat(updatedExam.getDateStarted()).isNotNull();
+        assertThat(updatedExam.getDateChanged()).isGreaterThan(exam.getDateChanged());
         assertThat(updatedExam.getExpireFrom()).isLessThan(Instant.now());
         assertThat(updatedExam.getStatus().getStage()).isEqualTo(ExamStatusStage.IN_PROGRESS);
         assertThat(updatedExam.getStatus().getStatus()).isEqualTo(ExamStatusCode.STATUS_STARTED);
