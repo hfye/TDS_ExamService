@@ -1381,7 +1381,7 @@ public class ExamServiceImplTest {
     }
 
     @Test
-    public void shouldStartNewExam() {
+    public void shouldStartNewExam() throws InterruptedException {
         Session session = new SessionBuilder().build();
         Exam exam = new ExamBuilder()
             .withStatus(new ExamStatusCode(ExamStatusCode.STATUS_APPROVED, ExamStatusStage.OPEN))
@@ -1426,6 +1426,8 @@ public class ExamServiceImplTest {
         assertThat(examConfiguration.getStartPosition()).isEqualTo(1);
         assertThat(examConfiguration.getTestLength()).isEqualTo(testLength);
 
+        // Sleep a bit to prevent intermittent test failures due to timing
+        Thread.sleep(100);
         Exam updatedExam = examArgumentCaptor.getValue();
         assertThat(updatedExam).isNotNull();
         assertThat(updatedExam.getAttempts()).isEqualTo(0);
