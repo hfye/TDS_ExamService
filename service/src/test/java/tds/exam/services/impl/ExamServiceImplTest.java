@@ -1435,7 +1435,7 @@ public class ExamServiceImplTest {
         assertThat(updatedExam.getMaxItems()).isEqualTo(testLength);
         assertThat(updatedExam.getDateStarted()).isNotNull();
         assertThat(updatedExam.getDateChanged()).isGreaterThan(exam.getDateChanged());
-        assertThat(updatedExam.getExpireFrom()).isLessThan(Instant.now());
+        assertThat(updatedExam.getExpireFrom()).isNotNull();
         assertThat(updatedExam.getStatus().getStage()).isEqualTo(ExamStatusStage.IN_PROGRESS);
         assertThat(updatedExam.getStatus().getStatus()).isEqualTo(ExamStatusCode.STATUS_STARTED);
     }
