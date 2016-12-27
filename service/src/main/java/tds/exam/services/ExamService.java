@@ -64,6 +64,15 @@ public interface ExamService {
     Optional<Double> getInitialAbility(Exam exam, Assessment assessment);
 
     /**
+     * Change the {@link tds.exam.Exam}'s status to paused.
+     *
+     * @param examId The id of the exam whose status is being changed
+     * @return {@code Optional<ValidationError>} if the {@link tds.exam.Exam} cannot be updated from its current status
+     * to the new status; otherwise {@code Optional.empty()}.\
+     */
+    Optional<ValidationError> pauseExam(UUID examId);
+
+    /**
      * Verify all the rules for granting approval to an {@link Exam} are satisfied.
      * <p>
      * The rules are:
