@@ -46,7 +46,7 @@ public class ExamAccommodationCommandRepositoryIntegrationTests {
 
         List<ExamAccommodation> accommodations = accommodationQueryRepository.findAccommodations(examId, "segment", new String[]{"language", "closed captioning"});
 
-        assertThat(accommodations).containsExactly(savedExamAccommodations.toArray(new ExamAccommodation[savedExamAccommodations.size()]));
+        assertThat(accommodations).containsOnly(savedExamAccommodations.toArray(new ExamAccommodation[savedExamAccommodations.size()]));
     }
 
     @Test
