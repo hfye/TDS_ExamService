@@ -56,13 +56,13 @@ public class ExamPageRepositoryIntegrationTests {
 
         examPageCommandRepository.insert(Arrays.asList(examPage1, examPage2));
 
-        assertThat(examPageQueryRepository.findAllPages(exam.getId())).hasSize(2);
+        assertThat(examPageQueryRepository.findAll(exam.getId())).hasSize(2);
 
         examPageCommandRepository.delete(exam.getId());
-        assertThat(examPageQueryRepository.findAllPages(exam.getId())).isEmpty();
+        assertThat(examPageQueryRepository.findAll(exam.getId())).isEmpty();
 
         examPageCommandRepository.insert(Arrays.asList(examPage1));
-        assertThat(examPageQueryRepository.findAllPages(exam.getId())).hasSize(1);
+        assertThat(examPageQueryRepository.findAll(exam.getId())).hasSize(1);
     }
 
 }

@@ -27,7 +27,7 @@ public class ExamPageQueryRepositoryImpl implements ExamPageQueryRepository {
     }
 
     @Override
-    public List<ExamPage> findAllPages(UUID examId) {
+    public List<ExamPage> findAll(UUID examId) {
         final MapSqlParameterSource parameters = new MapSqlParameterSource("examId", UuidAdapter.getBytesFromUUID(examId));
 
         final String SQL =

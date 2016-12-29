@@ -559,7 +559,6 @@ public class Exam {
         return customAccommodations;
     }
 
-
     /**
      * @return the number of exam restarts (resumes) within the grace period
      */

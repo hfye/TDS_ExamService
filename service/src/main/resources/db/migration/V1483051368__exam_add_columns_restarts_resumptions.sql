@@ -1,6 +1,6 @@
 /***********************************************************************************************************************
 
-File: V1482975425__exam_add_columns_restarts_resumptions.sql
+File: V1483051368__exam_add_columns_restarts_resumptions.sql
 
 Desc: Adds some missing columns from the exam table required for starting an exam
 

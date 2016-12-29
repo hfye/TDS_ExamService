@@ -50,6 +50,6 @@ public class ExamItemServiceImpl implements ExamItemService {
 
     @Override
     public List<ExamPage> findAllPages(final UUID examId) {
-        return examPageQueryRepository.findAllPages(examId);
+        return examPageQueryRepository.findAll(examId);
     }
 }

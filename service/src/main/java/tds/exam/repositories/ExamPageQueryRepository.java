@@ -16,5 +16,5 @@ public interface ExamPageQueryRepository {
      * @param examId the id of the {@link tds.exam.Exam} that the {@link tds.exam.models.ExamPage}s correspond to
      * @return
      */
-    List<ExamPage> findAllPages(UUID examId);
+    List<ExamPage> findAll(UUID examId);
 }

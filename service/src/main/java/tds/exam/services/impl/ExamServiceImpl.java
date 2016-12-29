@@ -395,18 +395,32 @@ class ExamServiceImpl implements ExamService {
             Exam initializedExam = initializeExam(exam, assessment);
             /* StudentDLL [5367] and TestOppServiceImpl [167] */
             examConfig = initializeDefaultExamConfiguration(initializedExam, assessment, timeLimitConfiguration);
-        } else { //Restart or resume the most recent exam
+        } else { // Restart or resume the most recent exam
             int resumptions = exam.getResumptions();
-            int restartsAndResumptions = exam.getRestartAndResumptions() + 1; // Increment the restart count
+            int restartsAndResumptions = exam.getRestartAndResumptions() + 1; // Increment the restartAndResumption count
             org.joda.time.Instant now = org.joda.time.Instant.now();
             Optional<org.joda.time.Instant> maybeLastActivity = examQueryRepository.getLastStudentActivityInstant(examId);
 
             /* [174] In the legacy app, if lastActiviy = null, then DbComparator.lessThan(null, <not-null>) = false */
-            boolean isTimeDifferenceLessThanDelay = maybeLastActivity.isPresent()
+            boolean isResumeable = maybeLastActivity.isPresent()
                 && Minutes.minutesBetween(maybeLastActivity.get(), now).getMinutes() < timeLimitConfiguration.getExamRestartWindowMinutes();
 
-            if (isTimeDifferenceLessThanDelay) {
+            /* [178 - 187] Move the resume/grace period restart increment and the exam update down in the flow of this code */
+            /* Skip TestOpportunityAudit code [189] */
+            int startPosition = 1;     // Default startPosition to "1" for a restarted exam
+
+            /* TestOpportunityServiceImpl [199] / StudentDlLL [5424]
+             * Session type is always 1 (online) in TDS, so skip first conditional on [200]
+             * No need to update restart count on line [203] because restart count can be derived from event table, so skip [202-203] */
+
+            if (isResumeable) { // Resume exam
+                /* TestOpportunityServiceImpl [215] - Only need to get latest position when resuming, else its 1 */
+                startPosition = examItemService.getExamPosition(exam.getId());
+                /* This increment is done in TestOpportunityServiceImpl [179] */
                 resumptions++;
+            } else if (!isResumeable && assessment.getDeleteUnansweredItems()) { // Restart exam
+                // Mark the exam pages as "deleted"
+                examItemService.deletePages(exam.getId());
             }
 
             Exam restartedExam = new Exam.Builder()
@@ -419,24 +433,6 @@ class ExamServiceImpl implements ExamService {
                 .build();
 
             examCommandRepository.update(restartedExam);
-            /* Skip TestOpportunityAudit code [189] */
-
-            // Default startPosition to "1" for a restarted exam
-            int startPosition = 1;
-
-            /* TestOpportunityServiceImpl [199] / StudentDlLL [5424]
-             * Session type is always 1 (online) in TDS, so skip first conditional on [200]
-             * No need to update restart count on line [203] because restart count can be derived from event table, so skip [202-203] */
-            if (!isTimeDifferenceLessThanDelay && assessment.getDeleteUnansweredItems()) { // Restart exam
-                // Mark the exam pages as "deleted"
-                examItemService.deletePages(exam.getId());
-            }
-
-            if (isTimeDifferenceLessThanDelay) { // Resume exam
-                /* TestOpportunityServiceImpl [215] - Only need to get latest position when resuming, else its 1 */
-                startPosition = examItemService.getExamPosition(exam.getId());
-            }
-
             /* Skip restart increment on [209] because we are already incrementing earlier in this method */
             /* [212] No need to call updateUnifnishedResponsePages since we no longer need to keep count of "opportunityrestart" */
             examConfig = getRestartedExamConfiguration(exam, assessment, timeLimitConfiguration, restartsAndResumptions, startPosition);

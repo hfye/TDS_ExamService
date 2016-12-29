@@ -67,7 +67,7 @@ public class ExamItemServiceImplTest {
         examPages.add(examPage1);
         examPages.add(examPage2);
 
-        when(mockExamPageQueryRepository.findAllPages(examId)).thenReturn(examPages);
+        when(mockExamPageQueryRepository.findAll(examId)).thenReturn(examPages);
         List<ExamPage> retExamPages = examItemService.findAllPages(examId);
         assertThat(retExamPages).hasSize(2);
     }
