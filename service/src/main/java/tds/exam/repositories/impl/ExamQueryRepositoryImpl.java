@@ -1,5 +1,6 @@
 package tds.exam.repositories.impl;
 
+import org.joda.time.Instant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -9,8 +10,12 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Repository;
 
+import javax.swing.text.html.Option;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +30,7 @@ import tds.exam.ExamStatusStage;
 import tds.exam.models.Ability;
 import tds.exam.repositories.ExamQueryRepository;
 
+import static tds.common.data.mapping.ResultSetMapperUtility.mapTimestampToInstant;
 import static tds.common.data.mapping.ResultSetMapperUtility.mapTimestampToJodaInstant;
 
 @Repository
@@ -71,6 +77,8 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
             "   ee.abnormal_starts, \n" +
             "   ee.waiting_for_segment_approval, \n" +
             "   ee.current_segment_position, \n" +
+            "   ee.resumptions, \n" +
+            "   ee.restarts_and_resumptions,\n" +
             "   e.created_at, \n" +
             "   esc.description, \n" +
             "   esc.status, \n" +
@@ -143,6 +151,8 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
                 "   ee.abnormal_starts, \n" +
                 "   ee.current_segment_position, \n" +
                 "   ee.waiting_for_segment_approval, \n" +
+                "   ee.resumptions, \n" +
+                "   ee.restarts_and_resumptions,\n" +
                 "   e.created_at, \n" +
                 "   esc.description, \n" +
                 "   esc.status, \n" +
@@ -178,6 +188,70 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
         }
 
         return examOptional;
+    }
+
+    @Override
+    public Optional<Instant> getLastStudentActivityInstant(final UUID id) {
+        final SqlParameterSource parameters = new MapSqlParameterSource("examId", UuidAdapter.getBytesFromUUID(id));
+
+        final String SQL =
+            "SELECT \n" +
+                "   MAX(lastStudentActivityTime)\n" +
+                "FROM (\n" +
+                "   SELECT \n" +
+                "       MAX(ee.date_changed) AS lastStudentActivityTime\n" +
+                "   FROM \n" +
+                "       exam e \n" +
+                "   JOIN \n" +
+                "       exam_event ee\n" +
+                "   ON \n" +
+                "       ee.exam_id = e.id\n" +
+                "   WHERE\n" +
+                "       ee.status = 'paused' AND\n" +
+                "       e.id = :examId\n" +
+                "   UNION ALL\n" +
+                "   SELECT \n" +
+                "       MAX(IR.created_at) AS lastStudentActivityTime\n" +
+                "   FROM \n" +
+                "       exam_item_response IR\n" +
+                "   JOIN\n" +
+                "       exam_item I\n" +
+                "   ON \n" +
+                "       I.id = IR.exam_item_id\n" +
+                "   JOIN \n" +
+                "       exam_page P \n" +
+                "   ON\n" +
+                "       P.id = I.exam_page_id\n" +
+                "   JOIN\n" +
+                "       exam_page_event PE\n" +
+                "   ON\n" +
+                "       P.id = PE.exam_page_id\n" +
+                "   WHERE\n" +
+                "       P.exam_id = :examId AND\n" +
+                "       PE.deleted_at IS NULL \n" +
+                "   UNION ALL\n" +
+                "   SELECT \n" +
+                "       MAX(P.created_at) AS lastStudentActivityTime\n" +
+                "   FROM \n" +
+                "       exam_page P\n" +
+                "   JOIN \n" +
+                "       exam_page_event PE\n" +
+                "   ON\n" +
+                "       P.id = PE.exam_page_id\n" +
+                "   WHERE \n" +
+                "       P.exam_id = :examId AND\n" +
+                "       PE.deleted_at IS NULL \n" +
+                ") as lastStudentActivityTime";
+
+        Optional<Instant> maybeLastPausedTime;
+        try {
+            Timestamp lastPausedTime = jdbcTemplate.queryForObject(SQL, parameters, Timestamp.class);
+            maybeLastPausedTime = Optional.of(new Instant(lastPausedTime.getTime()));
+        } catch (EmptyResultDataAccessException e) {
+            maybeLastPausedTime = Optional.empty();
+        }
+
+        return maybeLastPausedTime;
     }
 
     @Override
@@ -277,6 +351,8 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
                 .withAbnormalStarts(rs.getInt("abnormal_starts"))
                 .withWaitingForSegmentApproval(rs.getBoolean("waiting_for_segment_approval"))
                 .withCurrentSegmentPosition(rs.getInt("current_segment_position"))
+                .withResumptions(rs.getInt("resumptions"))
+                .withRestartsAndResumptions(rs.getInt("restarts_and_resumptions"))
                 .build();
         }
     }

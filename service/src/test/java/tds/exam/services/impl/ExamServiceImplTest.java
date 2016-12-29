@@ -50,6 +50,7 @@ import tds.exam.repositories.HistoryQueryRepository;
 import tds.exam.services.AssessmentService;
 import tds.exam.services.ConfigService;
 import tds.exam.services.ExamAccommodationService;
+import tds.exam.services.ExamItemService;
 import tds.exam.services.ExamSegmentService;
 import tds.exam.services.ExamService;
 import tds.exam.services.SessionService;
@@ -111,6 +112,9 @@ public class ExamServiceImplTest {
     @Mock
     private ExamSegmentService mockExamSegmentService;
 
+    @Mock
+    private ExamItemService mockExamItemService;
+
     @Captor
     private ArgumentCaptor<Exam> examArgumentCaptor;
 
@@ -128,6 +132,7 @@ public class ExamServiceImplTest {
             mockTimeLimitConfigurationService,
             mockConfigService,
             mockExamCommandRepository,
+            mockExamItemService,
             mockExamStatusQueryRepository,
             mockExamAccommodationService);
     }
@@ -1460,13 +1465,83 @@ public class ExamServiceImplTest {
 
         assertThat(examConfigurationResponse.getData().isPresent()).isTrue();
         ExamConfiguration examConfiguration = examConfigurationResponse.getData().get();
-        assertThat(examConfiguration.getAttempt()).isEqualTo(0);
+        assertThat(examConfiguration.getRestartsAndResumptions()).isEqualTo(0);
         assertThat(examConfiguration.getContentLoadTimeoutMinutes()).isEqualTo(120);
         assertThat(examConfiguration.getExam().getId()).isEqualTo(exam.getId());
         assertThat(examConfiguration.getExamRestartWindowMinutes()).isEqualTo(timeLimitConfiguration.getExamRestartWindowMinutes());
         assertThat(examConfiguration.getInterfaceTimeoutMinutes()).isEqualTo(timeLimitConfiguration.getInterfaceTimeoutMinutes());
         assertThat(examConfiguration.getPrefetch()).isEqualTo(assessment.getPrefetch());
 
+        assertThat(examConfiguration.getStartPosition()).isEqualTo(1);
+        assertThat(examConfiguration.getTestLength()).isEqualTo(testLength);
+
+        Exam updatedExam = examArgumentCaptor.getValue();
+        assertThat(updatedExam).isNotNull();
+        assertThat(updatedExam.getAttempts()).isEqualTo(0);
+        assertThat(updatedExam.getId()).isEqualTo(exam.getId());
+        assertThat(updatedExam.getMaxItems()).isEqualTo(testLength);
+        assertThat(updatedExam.getDateStarted()).isNotNull();
+        assertThat(updatedExam.getDateChanged()).isGreaterThan(exam.getDateChanged());
+        assertThat(updatedExam.getExpireFrom()).isNotNull();
+        assertThat(updatedExam.getStatus().getStage()).isEqualTo(ExamStatusStage.IN_PROGRESS);
+        assertThat(updatedExam.getStatus().getStatus()).isEqualTo(ExamStatusCode.STATUS_STARTED);
+        assertThat(updatedExam.getStatusChangeDate()).isGreaterThan(approvedStatusDate);
+    }
+
+    @Test
+    public void shouldRestartExistingExamOutsideGracePeriodPausedExam() throws InterruptedException {
+        Session session = new SessionBuilder().build();
+        final Instant approvedStatusDate = org.joda.time.Instant.now().minus(5000);
+        final Instant lastStudentActivityTime = org.joda.time.Instant.now().minus(25 * 60 * 1000); // minus 25 minutes
+        final int testLength = 10;
+
+        Exam exam = new ExamBuilder()
+            .withStatus(new ExamStatusCode(ExamStatusCode.STATUS_APPROVED, ExamStatusStage.OPEN), approvedStatusDate)
+            .withSessionId(session.getId())
+            .withResumptions(3)
+            .withDateChanged(Instant.now().minus(50000))
+            .withRestartsAndResumptions(5)
+            .withMaxItems(10)
+            .withDateStarted(Instant.now().minus(60000))
+            .build();
+        Assessment assessment = new AssessmentBuilder().build();
+        TimeLimitConfiguration timeLimitConfiguration = new TimeLimitConfiguration.Builder()
+            .withTaCheckinTimeMinutes(3)
+            .withAssessmentId(assessment.getAssessmentId())
+            .withExamDelayDays(2)
+            .withExamRestartWindowMinutes(20) // "grace period"
+            .withInterfaceTimeoutMinutes(4)
+            .withRequestInterfaceTimeoutMinutes(5)
+            .build();
+        ExternalSessionConfiguration extSessionConfig = new ExternalSessionConfiguration(exam.getClientName(), SIMULATION_ENVIRONMENT, 0, 0, 0, 0);
+
+        when(mockSessionService.findExternalSessionConfigurationByClientName(exam.getClientName())).thenReturn(Optional.of(extSessionConfig));
+        when(mockExamQueryRepository.getExamById(exam.getId())).thenReturn(Optional.of(exam));
+        when(mockExamQueryRepository.getLastStudentActivityInstant(exam.getId())).thenReturn(Optional.of(lastStudentActivityTime));
+        when(mockSessionService.findSessionById(exam.getSessionId())).thenReturn(Optional.of(session));
+        when(mockAssessmentService.findAssessment(exam.getClientName(), exam.getAssessmentKey()))
+            .thenReturn(Optional.of(assessment));
+        when(mockTimeLimitConfigurationService.findTimeLimitConfiguration(exam.getClientName(), assessment.getAssessmentId()))
+            .thenReturn(Optional.of(timeLimitConfiguration));
+        when(mockExamSegmentService.initializeExamSegments(exam, assessment)).thenReturn(testLength);
+
+        Response<ExamConfiguration> examConfigurationResponse = examService.startExam(exam.getId());
+
+        verify(mockExamQueryRepository).getExamById(exam.getId());
+        verify(mockSessionService).findSessionById(exam.getSessionId());
+        verify(mockAssessmentService).findAssessment(exam.getClientName(), exam.getAssessmentKey());
+        verify(mockTimeLimitConfigurationService).findTimeLimitConfiguration(exam.getClientName(), assessment.getAssessmentId());
+        verify(mockExamCommandRepository).update(examArgumentCaptor.capture());
+        verify(mockExamQueryRepository).getLastStudentActivityInstant(exam.getId());
+
+        assertThat(examConfigurationResponse.getData().isPresent()).isTrue();
+        ExamConfiguration examConfiguration = examConfigurationResponse.getData().get();
+        assertThat(examConfiguration.getRestartsAndResumptions()).isEqualTo(6);
+        assertThat(examConfiguration.getContentLoadTimeoutMinutes()).isEqualTo(120);
+        assertThat(examConfiguration.getExam().getId()).isEqualTo(exam.getId());
+        assertThat(examConfiguration.getExamRestartWindowMinutes()).isEqualTo(timeLimitConfiguration.getExamRestartWindowMinutes());
+        assertThat(examConfiguration.getInterfaceTimeoutMinutes()).isEqualTo(timeLimitConfiguration.getInterfaceTimeoutMinutes());
+        assertThat(examConfiguration.getPrefetch()).isEqualTo(assessment.getPrefetch());
         assertThat(examConfiguration.getStartPosition()).isEqualTo(1);
         assertThat(examConfiguration.getTestLength()).isEqualTo(testLength);
 
@@ -1477,8 +1552,88 @@ public class ExamServiceImplTest {
         assertThat(updatedExam.getId()).isEqualTo(exam.getId());
         assertThat(updatedExam.getMaxItems()).isEqualTo(testLength);
         assertThat(updatedExam.getDateStarted()).isNotNull();
+        assertThat(updatedExam.getResumptions()).isEqualTo(3);
+        assertThat(updatedExam.getRestartAndResumptions()).isEqualTo(6);
         assertThat(updatedExam.getDateChanged()).isGreaterThan(exam.getDateChanged());
-        assertThat(updatedExam.getExpireFrom()).isNotNull();
+        assertThat(updatedExam.getExpireFrom()).isNull();
+        assertThat(updatedExam.getStatus().getStage()).isEqualTo(ExamStatusStage.IN_PROGRESS);
+        assertThat(updatedExam.getStatus().getStatus()).isEqualTo(ExamStatusCode.STATUS_STARTED);
+        assertThat(updatedExam.getStatusChangeDate()).isGreaterThan(approvedStatusDate);
+    }
+
+    @Test
+    public void shouldResumeExistingExamWithinGracePeriodPausedExam() throws InterruptedException {
+        Session session = new SessionBuilder().build();
+        final Instant approvedStatusDate = org.joda.time.Instant.now().minus(5000);
+        final Instant lastStudentActivityTime = org.joda.time.Instant.now().minus(15 * 60 * 1000); // minus 15 minutes, within grace period
+        final int resumePosition = 5;
+        final int testLength = 10;
+
+        Exam exam = new ExamBuilder()
+            .withStatus(new ExamStatusCode(ExamStatusCode.STATUS_APPROVED, ExamStatusStage.OPEN), approvedStatusDate)
+            .withSessionId(session.getId())
+            .withResumptions(3)
+            .withDateChanged(Instant.now().minus(50000))
+            .withRestartsAndResumptions(5)
+            .withMaxItems(10)
+            .withDateStarted(Instant.now().minus(60000))
+            .build();
+        Assessment assessment = new AssessmentBuilder().build();
+        TimeLimitConfiguration timeLimitConfiguration = new TimeLimitConfiguration.Builder()
+            .withTaCheckinTimeMinutes(3)
+            .withAssessmentId(assessment.getAssessmentId())
+            .withExamDelayDays(2)
+            .withExamRestartWindowMinutes(20) // "grace period" of 20 mins
+            .withInterfaceTimeoutMinutes(4)
+            .withRequestInterfaceTimeoutMinutes(5)
+            .build();
+        ExternalSessionConfiguration extSessionConfig = new ExternalSessionConfiguration(exam.getClientName(), SIMULATION_ENVIRONMENT, 0, 0, 0, 0);
+
+        when(mockSessionService.findExternalSessionConfigurationByClientName(exam.getClientName())).thenReturn(Optional.of(extSessionConfig));
+        when(mockExamQueryRepository.getExamById(exam.getId())).thenReturn(Optional.of(exam));
+        when(mockExamQueryRepository.getLastStudentActivityInstant(exam.getId())).thenReturn(Optional.of(lastStudentActivityTime));
+        when(mockSessionService.findSessionById(exam.getSessionId())).thenReturn(Optional.of(session));
+        when(mockAssessmentService.findAssessment(exam.getClientName(), exam.getAssessmentKey()))
+            .thenReturn(Optional.of(assessment));
+        when(mockTimeLimitConfigurationService.findTimeLimitConfiguration(exam.getClientName(), assessment.getAssessmentId()))
+            .thenReturn(Optional.of(timeLimitConfiguration));
+        when(mockExamSegmentService.initializeExamSegments(exam, assessment)).thenReturn(testLength);
+        when(mockExamItemService.getExamPosition(exam.getId())).thenReturn(resumePosition);
+        when(mockExamItemService.getExamPosition(exam.getId())).thenReturn(5);
+
+        Response<ExamConfiguration> examConfigurationResponse = examService.startExam(exam.getId());
+
+        verify(mockExamQueryRepository).getExamById(exam.getId());
+        verify(mockSessionService).findSessionById(exam.getSessionId());
+        verify(mockAssessmentService).findAssessment(exam.getClientName(), exam.getAssessmentKey());
+        verify(mockTimeLimitConfigurationService).findTimeLimitConfiguration(exam.getClientName(), assessment.getAssessmentId());
+        verify(mockExamCommandRepository).update(examArgumentCaptor.capture());
+        verify(mockExamItemService).getExamPosition(exam.getId());
+        verify(mockExamQueryRepository).getLastStudentActivityInstant(exam.getId());
+        verify(mockExamItemService).getExamPosition(exam.getId());
+
+        assertThat(examConfigurationResponse.getData().isPresent()).isTrue();
+        ExamConfiguration examConfiguration = examConfigurationResponse.getData().get();
+        assertThat(examConfiguration.getRestartsAndResumptions()).isEqualTo(6);
+        assertThat(examConfiguration.getContentLoadTimeoutMinutes()).isEqualTo(120);
+        assertThat(examConfiguration.getExam().getId()).isEqualTo(exam.getId());
+        assertThat(examConfiguration.getExamRestartWindowMinutes()).isEqualTo(timeLimitConfiguration.getExamRestartWindowMinutes());
+        assertThat(examConfiguration.getInterfaceTimeoutMinutes()).isEqualTo(timeLimitConfiguration.getInterfaceTimeoutMinutes());
+        assertThat(examConfiguration.getPrefetch()).isEqualTo(assessment.getPrefetch());
+        assertThat(examConfiguration.getStartPosition()).isEqualTo(5);
+        assertThat(examConfiguration.getTestLength()).isEqualTo(testLength);
+
+        // Sleep a bit to prevent intermittent test failures due to timing
+        Exam updatedExam = examArgumentCaptor.getValue();
+        assertThat(updatedExam).isNotNull();
+        assertThat(updatedExam.getAttempts()).isEqualTo(0);
+        assertThat(updatedExam.getId()).isEqualTo(exam.getId());
+        assertThat(updatedExam.getMaxItems()).isEqualTo(testLength);
+        assertThat(updatedExam.getDateStarted()).isNotNull();
+        assertThat(updatedExam.getResumptions()).isEqualTo(4);
+        assertThat(updatedExam.getRestartAndResumptions()).isEqualTo(6);
+        assertThat(updatedExam.getDateChanged()).isGreaterThan(exam.getDateChanged());
+        assertThat(updatedExam.getExpireFrom()).isNull();
         assertThat(updatedExam.getStatus().getStage()).isEqualTo(ExamStatusStage.IN_PROGRESS);
         assertThat(updatedExam.getStatus().getStatus()).isEqualTo(ExamStatusCode.STATUS_STARTED);
         assertThat(updatedExam.getStatusChangeDate()).isGreaterThan(approvedStatusDate);

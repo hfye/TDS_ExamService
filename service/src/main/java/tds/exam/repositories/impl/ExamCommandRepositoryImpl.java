@@ -100,7 +100,9 @@ class ExamCommandRepositoryImpl implements ExamCommandRepository {
             .addValue("abnormalStarts", exam.getAbnormalStarts())
             .addValue("waitingForSegmentApproval", exam.isWaitingForSegmentApproval())
             .addValue("currentSegmentPosition", exam.getCurrentSegmentPosition())
-            .addValue("dateStarted", mapJodaInstantToTimestamp(exam.getDateStarted()));
+            .addValue("dateStarted", mapJodaInstantToTimestamp(exam.getDateStarted()))
+            .addValue("resumptions", exam.getResumptions())
+            .addValue("restartsAndResumptions", exam.getRestartAndResumptions());
 
         String examEventInsertSQL = "INSERT INTO exam_event (\n" +
             "  exam_id,\n" +
@@ -119,7 +121,9 @@ class ExamCommandRepositoryImpl implements ExamCommandRepository {
             "  date_started,\n" +
             "  waiting_for_segment_approval,\n" +
             "  current_segment_position,\n" +
-            "  abnormal_starts\n" +
+            "  abnormal_starts,\n" +
+            "  resumptions,\n" +
+            "  restarts_and_resumptions\n" +
             ")\n" +
             "VALUES\n" +
             "(\n" +
@@ -139,7 +143,9 @@ class ExamCommandRepositoryImpl implements ExamCommandRepository {
             "  :dateStarted,\n" +
             "  :waitingForSegmentApproval,\n" +
             "  :currentSegmentPosition,\n" +
-            "  :abnormalStarts\n" +
+            "  :abnormalStarts,\n" +
+            "  :resumptions,\n" +
+            "  :restartsAndResumptions\n" +
             ");";
 
         int insertCount = jdbcTemplate.update(examEventInsertSQL, examEventParameters);

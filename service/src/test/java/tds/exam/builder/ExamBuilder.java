@@ -44,6 +44,8 @@ public class ExamBuilder {
     private int abnormalStarts = 1;
     private boolean waitingForSegmentApproval = false;
     private int currentSegmentPosition = 1;
+    private int resumptions = 5;
+    private int restartsAndResumptions = 7;
 
     public Exam build() {
         return new Exam.Builder()
@@ -64,6 +66,7 @@ public class ExamBuilder {
             .withLoginSSID(studentKey)
             .withDateJoined(dateJoined)
             .withMaxItems(maxItems)
+            .withResumptions(resumptions)
             .withAssessmentWindowId(assessmentWindowId)
             .withStudentName(studentName)
             .withAssessmentAlgorithm(assessmentAlgorithm)
@@ -75,6 +78,9 @@ public class ExamBuilder {
             .withExpireFrom(expireFrom)
             .withWaitingForSegmentApproval(waitingForSegmentApproval)
             .withCurrentSegmentPosition(currentSegmentPosition)
+            .withMaxItems(maxItems)
+            .withResumptions(resumptions)
+            .withRestartsAndResumptions(restartsAndResumptions)
             .build();
     }
 
@@ -214,6 +220,21 @@ public class ExamBuilder {
 
     public ExamBuilder withCurrentSegmentPosition(int currentSegmentPosition) {
         this.currentSegmentPosition = currentSegmentPosition;
+        return this;
+    }
+
+    public ExamBuilder withResumptions(int resumptions) {
+        this.resumptions = resumptions;
+        return this;
+    }
+
+    public ExamBuilder withRestartsAndResumptions(int restartsAndResumptions) {
+        this.restartsAndResumptions = restartsAndResumptions;
+        return this;
+    }
+
+    public ExamBuilder withMaxItems(int maxItems) {
+        this.maxItems = maxItems;
         return this;
     }
 }

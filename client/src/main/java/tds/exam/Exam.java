@@ -41,6 +41,8 @@ public class Exam {
     private int abnormalStarts;
     private boolean waitingForSegmentApproval;
     private int currentSegmentPosition;
+    private int resumptions;
+    private int restartsAndResumptions;
 
     public static class Builder {
         private UUID id;
@@ -74,7 +76,8 @@ public class Exam {
         private int abnormalStarts;
         private boolean waitingForSegmentApproval;
         private int currentSegmentPosition;
-
+        private int resumptions;
+        private int restartsAndResumptions;
 
         public Builder withSegmented(boolean segmented) {
             this.segmented = segmented;
@@ -230,6 +233,17 @@ public class Exam {
             return this;
         }
 
+        public Builder withResumptions(int resumptions) {
+            this.resumptions = resumptions;
+            return this;
+        }
+
+        public Builder withRestartsAndResumptions(int restartsAndResumptions) {
+            this.restartsAndResumptions = restartsAndResumptions;
+            return this;
+        }
+
+
         public Builder fromExam(Exam exam) {
             id = exam.id;
             sessionId = exam.sessionId;
@@ -262,6 +276,8 @@ public class Exam {
             waitingForSegmentApproval = exam.waitingForSegmentApproval;
             currentSegmentPosition = exam.currentSegmentPosition;
             languageCode = exam.languageCode;
+            resumptions = exam.resumptions;
+            restartsAndResumptions = exam.restartsAndResumptions;
             return this;
         }
 
@@ -302,6 +318,8 @@ public class Exam {
         waitingForSegmentApproval = builder.waitingForSegmentApproval;
         currentSegmentPosition = builder.currentSegmentPosition;
         languageCode = builder.languageCode;
+        resumptions = builder.resumptions;
+        restartsAndResumptions = builder.restartsAndResumptions;
     }
 
     /**
@@ -525,4 +543,19 @@ public class Exam {
     public int getCurrentSegmentPosition() {
         return currentSegmentPosition;
     }
+
+    /**
+     * @return the number of exam restarts (resumes) within the grace period
+     */
+    public int getResumptions() {
+        return resumptions;
+    }
+
+    /**
+     * @return the total number of exam restarts
+     */
+    public int getRestartAndResumptions() {
+        return restartsAndResumptions;
+    }
+
 }

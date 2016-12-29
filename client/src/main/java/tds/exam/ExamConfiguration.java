@@ -12,7 +12,7 @@ public class ExamConfiguration {
     private int examRestartWindowMinutes;
     private int requestInterfaceTimeoutMinutes;
     private int prefetch;
-    private int attempt;
+    private int restartsAndResumptions;
     private int startPosition;
     private String status;
     private String failureMessage;
@@ -28,7 +28,7 @@ public class ExamConfiguration {
         this.examRestartWindowMinutes = builder.examRestartWindowMinutes;
         this.requestInterfaceTimeoutMinutes = builder.requestInterfaceTimeoutMinutes;
         this.prefetch = builder.prefetch;
-        this.attempt = builder.attempt;
+        this.restartsAndResumptions = builder.restartsAndResumptions;
         this.startPosition = builder.startPosition;
         this.status = builder.status;
         this.failureMessage = builder.failureMessage;
@@ -43,7 +43,7 @@ public class ExamConfiguration {
         private int examRestartWindowMinutes;
         private int requestInterfaceTimeoutMinutes;
         private int prefetch;
-        private int attempt;
+        private int restartsAndResumptions;
         private int startPosition;
         private String status;
         private String failureMessage;
@@ -80,8 +80,8 @@ public class ExamConfiguration {
             return this;
         }
 
-        public Builder withAttempt(int attempt) {
-            this.attempt = attempt;
+        public Builder withRestartsAndResumptions(int restartsAndResumptions) {
+            this.restartsAndResumptions = restartsAndResumptions;
             return this;
         }
 
@@ -160,8 +160,8 @@ public class ExamConfiguration {
     /**
      * @return The attempt number
      */
-    public int getAttempt() {
-        return attempt;
+    public int getRestartsAndResumptions() {
+        return restartsAndResumptions;
     }
 
     /**

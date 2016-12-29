@@ -1,5 +1,7 @@
 package tds.exam.repositories;
 
+import org.joda.time.Instant;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,13 +32,23 @@ public interface ExamQueryRepository {
     Optional<Exam> getLastAvailableExam(long studentId, String assessmentId, String clientName);
 
     /**
+     * Retrieves the {@link java.time.Instant} the {@link tds.exam.Exam} was last paused, an
+     * {@link tds.exam.models.ExamResponse} was last submitted, or a {@link tds.exam.models.ExamPage} was last
+     * created at.
+     *
+     * @param examId the exam id of the paused exam
+     * @return the time the exam was last paused
+     */
+    Optional<Instant> getLastStudentActivityInstant(UUID examId);
+
+    /**
      * Retrieves a listing of all ability records for the specified exam and student.
      *
-     * @param exam          the exam for which to exclude from the ability query
-     * @param clientName    client name for the exam
-     * @param subject       the subject of the exam
-     * @param studentId     the student taking the exam
-     * @return  a list of {@link Ability} objects for past exams
+     * @param exam       the exam for which to exclude from the ability query
+     * @param clientName client name for the exam
+     * @param subject    the subject of the exam
+     * @param studentId  the student taking the exam
+     * @return a list of {@link Ability} objects for past exams
      */
     List<Ability> findAbilities(UUID exam, String clientName, String subject, Long studentId);
 }
