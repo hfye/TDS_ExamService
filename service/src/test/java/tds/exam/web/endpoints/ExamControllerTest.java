@@ -37,6 +37,7 @@ import tds.exam.error.ValidationErrorCode;
 import tds.exam.services.ExamService;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static tds.exam.ExamStatusCode.STATUS_APPROVED;
@@ -218,5 +219,15 @@ public class ExamControllerTest {
         ValidationError error = response.getBody().getErrors()[0];
         assertThat(error.getCode()).isEqualTo(ValidationErrorCode.EXAM_STATUS_TRANSITION_FAILURE);
         assertThat(error.getMessage()).isEqualTo("Bad transition from foo to bar");
+    }
+
+    @Test
+    public void shouldPauseAllExamsInASession() {
+        UUID sessionId = UUID.randomUUID();
+        doNothing().when(mockExamService).pauseAllExamsInSession(sessionId);
+
+        controller.pauseExamsInSession(sessionId);
+
+        verify(mockExamService).pauseAllExamsInSession(sessionId);
     }
 }

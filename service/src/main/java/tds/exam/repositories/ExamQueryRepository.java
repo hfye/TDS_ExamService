@@ -4,6 +4,7 @@ import org.joda.time.Instant;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import tds.exam.Exam;
@@ -40,6 +41,15 @@ public interface ExamQueryRepository {
      * @return the time the exam was last paused
      */
     Optional<Instant> getLastStudentActivityInstant(UUID examId);
+
+    /**
+     * Find all {@link tds.exam.Exam}s that belong to a {@link tds.session.Session} so they can be paused.
+     *
+     * @param sessionId The unique identifier of the session
+     * @param statusSet A {@code java.util.Set} of statuses that can transition to "paused"
+     * @return A collection of exams that are assigned to the specified session
+     */
+    List<Exam> findAllExamsInSessionWithStatus(UUID sessionId, Set<String> statusSet);
 
     /**
      * Retrieves a listing of all ability records for the specified exam and student.

@@ -41,6 +41,7 @@ public class Exam {
     private int abnormalStarts;
     private boolean waitingForSegmentApproval;
     private int currentSegmentPosition;
+    private boolean customAccommodations;
     private int resumptions;
     private int restartsAndResumptions;
 
@@ -76,6 +77,7 @@ public class Exam {
         private int abnormalStarts;
         private boolean waitingForSegmentApproval;
         private int currentSegmentPosition;
+        private boolean customAccommodations;
         private int resumptions;
         private int restartsAndResumptions;
 
@@ -233,6 +235,11 @@ public class Exam {
             return this;
         }
 
+        public Builder withCustomAccommodation(boolean customAccommodation) {
+            this.customAccommodations = customAccommodation;
+            return this;
+        }
+
         public Builder withResumptions(int resumptions) {
             this.resumptions = resumptions;
             return this;
@@ -242,7 +249,6 @@ public class Exam {
             this.restartsAndResumptions = restartsAndResumptions;
             return this;
         }
-
 
         public Builder fromExam(Exam exam) {
             id = exam.id;
@@ -276,6 +282,7 @@ public class Exam {
             waitingForSegmentApproval = exam.waitingForSegmentApproval;
             currentSegmentPosition = exam.currentSegmentPosition;
             languageCode = exam.languageCode;
+            customAccommodations = exam.isCustomAccommodations();
             resumptions = exam.resumptions;
             restartsAndResumptions = exam.restartsAndResumptions;
             return this;
@@ -317,6 +324,7 @@ public class Exam {
         abnormalStarts = builder.abnormalStarts;
         waitingForSegmentApproval = builder.waitingForSegmentApproval;
         currentSegmentPosition = builder.currentSegmentPosition;
+        customAccommodations = builder.customAccommodations;
         languageCode = builder.languageCode;
         resumptions = builder.resumptions;
         restartsAndResumptions = builder.restartsAndResumptions;
@@ -543,6 +551,14 @@ public class Exam {
     public int getCurrentSegmentPosition() {
         return currentSegmentPosition;
     }
+
+    /**
+     * @return {@code true} if exam accommodations are not defaults
+     */
+    public boolean isCustomAccommodations() {
+        return customAccommodations;
+    }
+
 
     /**
      * @return the number of exam restarts (resumes) within the grace period

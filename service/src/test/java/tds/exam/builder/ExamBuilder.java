@@ -44,6 +44,8 @@ public class ExamBuilder {
     private int abnormalStarts = 1;
     private boolean waitingForSegmentApproval = false;
     private int currentSegmentPosition = 1;
+    private boolean customAccommodations = true;
+    private String language = "English";
     private int resumptions = 5;
     private int restartsAndResumptions = 7;
 
@@ -66,7 +68,6 @@ public class ExamBuilder {
             .withLoginSSID(studentKey)
             .withDateJoined(dateJoined)
             .withMaxItems(maxItems)
-            .withResumptions(resumptions)
             .withAssessmentWindowId(assessmentWindowId)
             .withStudentName(studentName)
             .withAssessmentAlgorithm(assessmentAlgorithm)
@@ -78,9 +79,10 @@ public class ExamBuilder {
             .withExpireFrom(expireFrom)
             .withWaitingForSegmentApproval(waitingForSegmentApproval)
             .withCurrentSegmentPosition(currentSegmentPosition)
-            .withMaxItems(maxItems)
+            .withCustomAccommodation(customAccommodations)
             .withResumptions(resumptions)
             .withRestartsAndResumptions(restartsAndResumptions)
+
             .build();
     }
 
@@ -223,6 +225,17 @@ public class ExamBuilder {
         return this;
     }
 
+    public ExamBuilder withCustomAccommodations(boolean customAccommodations) {
+        this.customAccommodations = customAccommodations;
+        return this;
+    }
+
+    public ExamBuilder withLanguage(String language) {
+        this.language = language;
+        return this;
+    }
+
+
     public ExamBuilder withResumptions(int resumptions) {
         this.resumptions = resumptions;
         return this;
@@ -237,4 +250,5 @@ public class ExamBuilder {
         this.maxItems = maxItems;
         return this;
     }
+
 }
