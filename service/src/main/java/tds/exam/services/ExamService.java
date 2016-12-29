@@ -73,6 +73,13 @@ public interface ExamService {
     Optional<ValidationError> pauseExam(UUID examId);
 
     /**
+     * Update the status of all {@link tds.exam.Exam}s in the specified {@link tds.session.Session} to "paused"
+     *
+     * @param sessionId The unique identifier of the session that has been closed
+     */
+    void pauseAllExamsInSession(UUID sessionId);
+
+    /**
      * Verify all the rules for granting approval to an {@link Exam} are satisfied.
      * <p>
      * The rules are:

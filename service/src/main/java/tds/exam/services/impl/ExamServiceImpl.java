@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import tds.assessment.Assessment;
 import tds.common.Response;
@@ -261,6 +262,26 @@ class ExamServiceImpl implements ExamService {
         examCommandRepository.update(pausedExam);
 
         return Optional.empty();
+    }
+
+    @Override
+    public void pauseAllExamsInSession(UUID sessionId) {
+        List<Exam> examsInSession = examQueryRepository.findAllExamsInSessionWithStatus(sessionId,
+            statusesThatCanTransitionToPaused);
+
+        if (examsInSession.isEmpty()) {
+            return;
+        }
+
+        ExamStatusCode pausedStatus = new ExamStatusCode(ExamStatusCode.STATUS_PAUSED, ExamStatusStage.INACTIVE);
+        List<Exam> pausedExams = examsInSession.stream()
+            .map(e -> new Exam.Builder().fromExam(e)
+                .withStatus(pausedStatus, org.joda.time.Instant.now())
+                .withStatusChangeReason("paused by session")
+                .build())
+            .collect(Collectors.toList());
+
+        examCommandRepository.update(pausedExams.toArray(new Exam[pausedExams.size()]));
     }
 
     @Override
