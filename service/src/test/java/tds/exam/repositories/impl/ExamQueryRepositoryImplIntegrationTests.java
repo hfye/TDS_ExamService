@@ -14,6 +14,7 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -147,6 +148,91 @@ public class ExamQueryRepositoryImplIntegrationTests {
         List<Ability> noAbilities = examQueryRepository.findAbilities(UUID.fromString("12345678-d1d2-4c24-805c-0dfdb45a0999"),
             "otherclient", "ELA", 9999L);
         assertThat(noAbilities).isEmpty();
+    }
+
+    @Test
+    public void shouldReturnLastPausedDate() {
+        Instant datePaused = Instant.now().minus(99999);
+        Exam exam = new ExamBuilder()
+            .withStatus(new ExamStatusCode(ExamStatusCode.STATUS_PAUSED, ExamStatusStage.INACTIVE), datePaused)
+            .withDateChanged(datePaused)
+            .build();
+        examCommandRepository.insert(exam);
+
+        Exam approvedExam = new Exam.Builder()
+            .fromExam(exam)
+            .withStatus(new ExamStatusCode(ExamStatusCode.STATUS_APPROVED, ExamStatusStage.IN_PROGRESS), Instant.now().minus(5000))
+            .build();
+
+        examCommandRepository.update(approvedExam);
+
+        Optional<Instant> maybeLastTimePaused = examQueryRepository.findLastStudentActivity(exam.getId());
+        assertThat(maybeLastTimePaused).isPresent();
+        assertThat(maybeLastTimePaused.get()).isEqualTo(datePaused);
+    }
+
+    @Test
+    public void shouldReturnLastResponseDate() {
+        Instant datePaused = Instant.now().minus(50000);
+        Instant datePageCreated = Instant.now().minus(70000);
+        Instant dateLastResponseSubmitted = Instant.now().minus(20000);
+        Instant dateEarlierResponseSubmitted = Instant.now().minus(30000);
+
+        Exam exam = new ExamBuilder()
+            .withStatus(new ExamStatusCode(ExamStatusCode.STATUS_PAUSED, ExamStatusStage.INACTIVE), datePaused)
+            .withDateChanged(datePaused)
+            .build();
+        examCommandRepository.insert(exam);
+
+        insertTestDataForResponses(datePageCreated, dateLastResponseSubmitted, dateEarlierResponseSubmitted, exam);
+
+        Optional<Instant> maybeLastTimeStudentResponded = examQueryRepository.findLastStudentActivity(exam.getId());
+        assertThat(maybeLastTimeStudentResponded).isPresent();
+        assertThat(maybeLastTimeStudentResponded.get()).isEqualTo(dateLastResponseSubmitted);
+    }
+
+    @Test
+    public void shouldReturnLastPageCreated() {
+        Instant datePaused = Instant.now().minus(50000);
+        Instant datePageCreated = Instant.now().minus(20000);
+        Instant dateLastResponseSubmitted = Instant.now().minus(40000);
+        Instant dateEarlierResponseSubmitted = Instant.now().minus(30000);
+
+        Exam exam = new ExamBuilder()
+            .withStatus(new ExamStatusCode(ExamStatusCode.STATUS_PAUSED, ExamStatusStage.INACTIVE), datePaused)
+            .withDateChanged(datePaused)
+            .build();
+        examCommandRepository.insert(exam);
+
+        insertTestDataForResponses(datePageCreated, dateLastResponseSubmitted, dateEarlierResponseSubmitted, exam);
+
+        Optional<Instant> maybeLastTimeStudentResponded = examQueryRepository.findLastStudentActivity(exam.getId());
+        assertThat(maybeLastTimeStudentResponded).isPresent();
+        assertThat(maybeLastTimeStudentResponded.get()).isEqualTo(datePageCreated);
+    }
+
+    private void insertTestDataForResponses(Instant datePageCreated, Instant dateLastResponseSubmitted, Instant dateEarlierResponseSubmitted, Exam exam) {
+        MapSqlParameterSource testParams = new MapSqlParameterSource("examId", UuidAdapter.getBytesFromUUID(exam.getId()))
+            .addValue("datePageCreated", new Timestamp(datePageCreated.getMillis()))
+            .addValue("dateLastResponseSubmitted", new Timestamp(dateLastResponseSubmitted.getMillis()))
+            .addValue("dateEarlierResponseSubmitted", new Timestamp(dateEarlierResponseSubmitted.getMillis()));
+
+        final String insertPageSQL =
+            "INSERT INTO exam_page (id, page_position, item_group_key, exam_id, created_at) " +
+            "VALUES (805, 1, 'GroupKey1', :examId, :datePageCreated)";
+        final String insertPageEventSQL =
+            "INSERT INTO exam_page_event (exam_page_id, started_at) VALUES (805, now())";
+        final String insertItemSQL =
+            "INSERT INTO exam_item (id, item_key, exam_page_id, position, type, is_fieldtest, segment_id, is_required)" +
+            "VALUES (2112, 'item-1', 805, 1, 'MI', 0, 'seg-id', 0)";
+        final String insertResponsesSQL =
+            "INSERT INTO exam_item_response (id, exam_item_id, response, created_at) " +
+            "VALUES (1337, 2112, 'Response 1', :dateLastResponseSubmitted), (1338, 2112, 'Response 2', :dateEarlierResponseSubmitted)";
+
+        jdbcTemplate.update(insertPageSQL, testParams);
+        jdbcTemplate.update(insertPageEventSQL, testParams);
+        jdbcTemplate.update(insertItemSQL, testParams);
+        jdbcTemplate.update(insertResponsesSQL, testParams);
     }
 
     @Test

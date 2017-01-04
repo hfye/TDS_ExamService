@@ -12,7 +12,6 @@ public class ExamConfiguration {
     private int examRestartWindowMinutes;
     private int requestInterfaceTimeoutMinutes;
     private int prefetch;
-    private int attempt;
     private int startPosition;
     private String status;
     private String failureMessage;
@@ -28,7 +27,6 @@ public class ExamConfiguration {
         this.examRestartWindowMinutes = builder.examRestartWindowMinutes;
         this.requestInterfaceTimeoutMinutes = builder.requestInterfaceTimeoutMinutes;
         this.prefetch = builder.prefetch;
-        this.attempt = builder.attempt;
         this.startPosition = builder.startPosition;
         this.status = builder.status;
         this.failureMessage = builder.failureMessage;
@@ -43,7 +41,6 @@ public class ExamConfiguration {
         private int examRestartWindowMinutes;
         private int requestInterfaceTimeoutMinutes;
         private int prefetch;
-        private int attempt;
         private int startPosition;
         private String status;
         private String failureMessage;
@@ -77,11 +74,6 @@ public class ExamConfiguration {
 
         public Builder withRequestInterfaceTimeout(int requestInterfaceTimeout) {
             this.requestInterfaceTimeoutMinutes = requestInterfaceTimeout;
-            return this;
-        }
-
-        public Builder withAttempt(int attempt) {
-            this.attempt = attempt;
             return this;
         }
 
@@ -155,13 +147,6 @@ public class ExamConfiguration {
      */
     public int getRequestInterfaceTimeoutMinutes() {
         return requestInterfaceTimeoutMinutes;
-    }
-
-    /**
-     * @return The attempt number
-     */
-    public int getAttempt() {
-        return attempt;
     }
 
     /**

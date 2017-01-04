@@ -1,6 +1,7 @@
 package tds.exam.services.impl;
 
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.Minutes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +43,7 @@ import tds.exam.repositories.HistoryQueryRepository;
 import tds.exam.services.AssessmentService;
 import tds.exam.services.ConfigService;
 import tds.exam.services.ExamAccommodationService;
+import tds.exam.services.ExamItemService;
 import tds.exam.services.ExamSegmentService;
 import tds.exam.services.ExamService;
 import tds.exam.services.SessionService;
@@ -70,6 +72,7 @@ class ExamServiceImpl implements ExamService {
 
     private final ExamQueryRepository examQueryRepository;
     private final ExamCommandRepository examCommandRepository;
+    private final ExamItemService examItemService;
     private final HistoryQueryRepository historyQueryRepository;
     private final SessionService sessionService;
     private final StudentService studentService;
@@ -92,6 +95,7 @@ class ExamServiceImpl implements ExamService {
                            TimeLimitConfigurationService timeLimitConfigurationService,
                            ConfigService configService,
                            ExamCommandRepository examCommandRepository,
+                           ExamItemService examItemService,
                            ExamStatusQueryRepository examStatusQueryRepository,
                            ExamAccommodationService examAccommodationService) {
         this.examQueryRepository = examQueryRepository;
@@ -103,6 +107,7 @@ class ExamServiceImpl implements ExamService {
         this.timeLimitConfigurationService = timeLimitConfigurationService;
         this.configService = configService;
         this.examCommandRepository = examCommandRepository;
+        this.examItemService = examItemService;
         this.examStatusQueryRepository = examStatusQueryRepository;
         this.examAccommodationService = examAccommodationService;
 
@@ -338,7 +343,7 @@ class ExamServiceImpl implements ExamService {
 
     @Override
     public Response<ExamConfiguration> startExam(final UUID examId) {
-        ExamConfiguration examConfig = null;
+        ExamConfiguration examConfig;
         Optional<Exam> maybeExam = examQueryRepository.getExamById(examId);
         if (!maybeExam.isPresent()) {
             return new Response<ExamConfiguration>(new ValidationError(
@@ -363,7 +368,8 @@ class ExamServiceImpl implements ExamService {
         Session session = maybeSession.get();
 
         /* StudentDLL [5269] / TestOpportunityServiceImpl [137] */
-        Optional<ValidationError> maybeAccessViolation = verifyAccess(new ApprovalRequest(examId, session.getId(), exam.getBrowserId(), exam.getClientName()), exam);
+        Optional<ValidationError> maybeAccessViolation = verifyAccess(new ApprovalRequest(examId, session.getId(),
+            exam.getBrowserId(), exam.getClientName()), exam);
         if (maybeAccessViolation.isPresent()) {
             return new Response<ExamConfiguration>(maybeAccessViolation.get());
         }
@@ -383,15 +389,53 @@ class ExamServiceImpl implements ExamService {
                         exam.getClientName(), assessment.getAssessmentId())));
 
         /* StudentDLL [5344] Skipping getInitialAbility() call here - the ability is retrieved in legacy but never set on TestConfig */
-        int testLength;
 
         if (exam.getDateStarted() == null) { // Start a new exam
             // Initialize the segments in the exam and get the testlength.
             Exam initializedExam = initializeExam(exam, assessment);
             /* StudentDLL [5367] and TestOppServiceImpl [167] */
             examConfig = initializeDefaultExamConfiguration(initializedExam, assessment, timeLimitConfiguration);
-        } else { //Restart the most recent exam
-            //TODO: Start existing opportunity [TDS-350]
+        } else { // Restart or resume the most recent exam
+            int resumptions = exam.getResumptions();
+            int restartsAndResumptions = exam.getRestartsAndResumptions() + 1; // Increment the restartAndResumption count
+            org.joda.time.Instant now = org.joda.time.Instant.now();
+            Optional<org.joda.time.Instant> maybeLastActivity = examQueryRepository.findLastStudentActivity(examId);
+
+            /* [178] In the legacy app, if lastActiviy = null, then DbComparator.lessThan(null, <not-null>) = false */
+            boolean isResumable = maybeLastActivity.isPresent()
+                && Minutes.minutesBetween(maybeLastActivity.get(), now).getMinutes() < timeLimitConfiguration.getExamRestartWindowMinutes();
+
+            /* [186 - 191] Move the resume/grace period restart increment and the exam update down in the flow of this code */
+            /* Skip TestOpportunityAudit code [193] */
+            int startPosition = 1;     // Default startPosition to "1" for a restarted exam
+
+            /* TestOpportunityServiceImpl [204] / StudentDlLL [5424]
+             * Session type is always 0 (online) in TDS, so skip first conditional on [204]
+             * No need to update restart count on line [203] because restart count can be derived from event table, so skip [202-203] */
+
+            if (isResumable) { // Resume exam
+                /* TestOpportunityServiceImpl [215] - Only need to get latest position when resuming, else its 1 */
+                startPosition = examItemService.getExamPosition(exam.getId());
+                /* This increment is done in TestOpportunityServiceImpl [179] */
+                resumptions++;
+            } else if (assessment.shouldDeleteUnansweredItems()) { // Restart exam
+                // Mark the exam pages as "deleted"
+                examItemService.deletePages(exam.getId());
+            }
+
+            Exam restartedExam = new Exam.Builder()
+                .fromExam(exam)
+                .withStatus(new ExamStatusCode(ExamStatusCode.STATUS_STARTED, ExamStatusStage.IN_PROGRESS), now)
+                .withDateChanged(now)
+                .withResumptions(resumptions)
+                .withRestartsAndResumptions(restartsAndResumptions)
+                .withDateStarted(now)
+                .build();
+
+            examCommandRepository.update(restartedExam);
+            /* Skip restart increment on [209] because we are already incrementing earlier in this method */
+            /* [212] No need to call updateUnifnishedResponsePages since we no longer need to keep count of "opportunityrestart" */
+            examConfig = getExamConfiguration(exam, assessment, timeLimitConfiguration, startPosition);
         }
 
         return new Response<>(examConfig);
@@ -409,6 +453,7 @@ class ExamServiceImpl implements ExamService {
             .withDateStarted(now)
             .withDateChanged(now)
             .withExpireFrom(now)
+            .withRestartsAndResumptions(0)
             .withMaxItems(testLength)
             .build();
 
@@ -422,6 +467,10 @@ class ExamServiceImpl implements ExamService {
         - scoreByTds has been removed as it is unused by the application.
     */
     private static ExamConfiguration initializeDefaultExamConfiguration(Exam exam, Assessment assessment, TimeLimitConfiguration timeLimitConfiguration) {
+        return getExamConfiguration(exam, assessment, timeLimitConfiguration, 1);
+    }
+
+    private static ExamConfiguration getExamConfiguration(Exam exam, Assessment assessment, TimeLimitConfiguration timeLimitConfiguration, int startPosition) {
         return new ExamConfiguration.Builder()
             .withExam(exam)
             .withContentLoadTimeout(CONTENT_LOAD_TIMEOUT)
@@ -430,8 +479,7 @@ class ExamServiceImpl implements ExamService {
             .withPrefetch(assessment.getPrefetch())
             .withValidateCompleteness(assessment.isValidateCompleteness())
             .withRequestInterfaceTimeout(timeLimitConfiguration.getRequestInterfaceTimeoutMinutes())
-            .withAttempt(0)
-            .withStartPosition(1)
+            .withStartPosition(startPosition)
             .withStatus(ExamStatusCode.STATUS_STARTED)
             .withTestLength(exam.getMaxItems())
             .build();

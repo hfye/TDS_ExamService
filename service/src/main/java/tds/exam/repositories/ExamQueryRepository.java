@@ -1,5 +1,7 @@
 package tds.exam.repositories;
 
+import org.joda.time.Instant;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -29,6 +31,16 @@ public interface ExamQueryRepository {
      * @return the {@link tds.exam.Exam Exam} if found otherwise empty
      */
     Optional<Exam> getLastAvailableExam(long studentId, String assessmentId, String clientName);
+
+    /**
+     * Retrieves the {@link java.time.Instant} the {@link tds.exam.Exam} was last paused, an
+     * {@link tds.exam.models.ExamItemResponse} was last submitted, or a {@link tds.exam.models.ExamPage} was last
+     * created at.
+     *
+     * @param examId the exam id of the paused exam
+     * @return the time the exam was last paused
+     */
+    Optional<Instant> findLastStudentActivity(UUID examId);
 
     /**
      * Find all {@link tds.exam.Exam}s that belong to a {@link tds.session.Session} so they can be paused.

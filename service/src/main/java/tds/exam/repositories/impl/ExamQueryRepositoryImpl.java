@@ -1,5 +1,6 @@
 package tds.exam.repositories.impl;
 
+import org.joda.time.Instant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -149,6 +151,70 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
         }
 
         return examOptional;
+    }
+
+    @Override
+    public Optional<Instant> findLastStudentActivity(final UUID id) {
+        final SqlParameterSource parameters = new MapSqlParameterSource("examId", UuidAdapter.getBytesFromUUID(id));
+
+        final String SQL =
+            "SELECT \n" +
+                "   MAX(lastStudentActivityTime)\n" +
+                "FROM (\n" +
+                "   SELECT \n" +
+                "       MAX(ee.date_changed) AS lastStudentActivityTime\n" +
+                "   FROM \n" +
+                "       exam e \n" +
+                "   JOIN \n" +
+                "       exam_event ee\n" +
+                "   ON \n" +
+                "       ee.exam_id = e.id\n" +
+                "   WHERE\n" +
+                "       ee.status = 'paused' AND\n" +
+                "       e.id = :examId\n" +
+                "   UNION ALL\n" +
+                "   SELECT \n" +
+                "       MAX(IR.created_at) AS lastStudentActivityTime\n" +
+                "   FROM \n" +
+                "       exam_item_response IR\n" +
+                "   JOIN\n" +
+                "       exam_item I\n" +
+                "   ON \n" +
+                "       I.id = IR.exam_item_id\n" +
+                "   JOIN \n" +
+                "       exam_page P \n" +
+                "   ON\n" +
+                "       P.id = I.exam_page_id\n" +
+                "   JOIN\n" +
+                "       exam_page_event PE\n" +
+                "   ON\n" +
+                "       P.id = PE.exam_page_id\n" +
+                "   WHERE\n" +
+                "       P.exam_id = :examId AND\n" +
+                "       PE.deleted_at IS NULL \n" +
+                "   UNION ALL\n" +
+                "   SELECT \n" +
+                "       MAX(P.created_at) AS lastStudentActivityTime\n" +
+                "   FROM \n" +
+                "       exam_page P\n" +
+                "   JOIN \n" +
+                "       exam_page_event PE\n" +
+                "   ON\n" +
+                "       P.id = PE.exam_page_id\n" +
+                "   WHERE \n" +
+                "       P.exam_id = :examId AND\n" +
+                "       PE.deleted_at IS NULL \n" +
+                ") as lastStudentActivityTime";
+
+        Optional<Instant> maybeLastStudentActivityTime;
+        try {
+            Timestamp lastPausedTime = jdbcTemplate.queryForObject(SQL, parameters, Timestamp.class);
+            maybeLastStudentActivityTime = Optional.of(new Instant(lastPausedTime.getTime()));
+        } catch (EmptyResultDataAccessException e) {
+            maybeLastStudentActivityTime = Optional.empty();
+        }
+
+        return maybeLastStudentActivityTime;
     }
 
     @Override
