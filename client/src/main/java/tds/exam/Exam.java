@@ -569,7 +569,7 @@ public class Exam {
     /**
      * @return the total number of exam restarts
      */
-    public int getRestartAndResumptions() {
+    public int getRestartsAndResumptions() {
         return restartsAndResumptions;
     }
 

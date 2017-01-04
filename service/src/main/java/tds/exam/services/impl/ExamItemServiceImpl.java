@@ -9,7 +9,6 @@ import java.util.UUID;
 import tds.exam.models.ExamPage;
 import tds.exam.repositories.ExamPageCommandRepository;
 import tds.exam.repositories.ExamPageQueryRepository;
-import tds.exam.repositories.ExamResponseCommandRepository;
 import tds.exam.repositories.ExamResponseQueryRepository;
 import tds.exam.services.ExamItemService;
 
@@ -25,8 +24,7 @@ public class ExamItemServiceImpl implements ExamItemService {
     @Autowired
     public ExamItemServiceImpl(ExamPageQueryRepository examPageQueryRepository,
                                ExamPageCommandRepository examPageCommandRepository,
-                               ExamResponseQueryRepository examResponseQueryRepository,
-                               ExamResponseCommandRepository examResponseCommandRepository)
+                               ExamResponseQueryRepository examResponseQueryRepository)
     {
         this.examPageCommandRepository = examPageCommandRepository;
         this.examPageQueryRepository = examPageQueryRepository;
@@ -40,12 +38,12 @@ public class ExamItemServiceImpl implements ExamItemService {
 
     @Override
     public void deletePages(final UUID examId) {
-        examPageCommandRepository.delete(examId);
+        examPageCommandRepository.deleteAll(examId);
     }
 
     @Override
     public int getExamPosition(final UUID examId) {
-        return examResponseQueryRepository.getExamPosition(examId);
+        return examResponseQueryRepository.getCurrentExamItemPosition(examId);
     }
 
     @Override

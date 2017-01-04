@@ -235,7 +235,6 @@ public class ExamBuilder {
         return this;
     }
 
-
     public ExamBuilder withResumptions(int resumptions) {
         this.resumptions = resumptions;
         return this;

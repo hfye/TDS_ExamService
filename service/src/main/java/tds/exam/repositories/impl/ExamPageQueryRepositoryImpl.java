@@ -20,6 +20,7 @@ import tds.exam.repositories.ExamPageQueryRepository;
 @Repository
 public class ExamPageQueryRepositoryImpl implements ExamPageQueryRepository {
     private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final static ExamPageRowMapper examPageRowMapper = new ExamPageRowMapper();
 
     @Autowired
     public ExamPageQueryRepositoryImpl(@Qualifier("queryJdbcTemplate") NamedParameterJdbcTemplate queryJdbcTemplate) {
@@ -53,12 +54,14 @@ public class ExamPageQueryRepositoryImpl implements ExamPageQueryRepository {
                 "   ON last_event.id = PE.id \n" +
                 "WHERE \n" +
                 "   P.exam_id = :examId AND\n" +
-                "   PE.deleted_at IS NULL";
+                "   PE.deleted_at IS NULL \n" +
+                "ORDER BY\n" +
+                "   P.page_position";
 
-        return jdbcTemplate.query(SQL, parameters, new ExamPageRowMapper());
+        return jdbcTemplate.query(SQL, parameters, examPageRowMapper);
     }
 
-    private class ExamPageRowMapper implements RowMapper<ExamPage> {
+    private static class ExamPageRowMapper implements RowMapper<ExamPage> {
         @Override
         public ExamPage mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new ExamPage.Builder()

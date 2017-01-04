@@ -54,11 +54,12 @@ public class ExamPageRepositoryIntegrationTests {
             .withItemGroupKey("GroupKey2")
             .build();
 
+        assertThat(examPageQueryRepository.findAll(exam.getId())).isEmpty();
         examPageCommandRepository.insert(Arrays.asList(examPage1, examPage2));
 
         assertThat(examPageQueryRepository.findAll(exam.getId())).hasSize(2);
 
-        examPageCommandRepository.delete(exam.getId());
+        examPageCommandRepository.deleteAll(exam.getId());
         assertThat(examPageQueryRepository.findAll(exam.getId())).isEmpty();
 
         examPageCommandRepository.insert(Arrays.asList(examPage1));

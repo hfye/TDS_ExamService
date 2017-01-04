@@ -23,7 +23,7 @@ public class ExamResponseQueryRepositoryImpl implements ExamResponseQueryReposit
     }
 
     @Override
-    public int getExamPosition(UUID examId) {
+    public int getCurrentExamItemPosition(UUID examId) {
         final SqlParameterSource params = new MapSqlParameterSource("examId", getBytesFromUUID(examId));
         final String SQL =
             "SELECT \n" +

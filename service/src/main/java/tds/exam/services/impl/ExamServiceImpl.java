@@ -397,28 +397,28 @@ class ExamServiceImpl implements ExamService {
             examConfig = initializeDefaultExamConfiguration(initializedExam, assessment, timeLimitConfiguration);
         } else { // Restart or resume the most recent exam
             int resumptions = exam.getResumptions();
-            int restartsAndResumptions = exam.getRestartAndResumptions() + 1; // Increment the restartAndResumption count
+            int restartsAndResumptions = exam.getRestartsAndResumptions() + 1; // Increment the restartAndResumption count
             org.joda.time.Instant now = org.joda.time.Instant.now();
-            Optional<org.joda.time.Instant> maybeLastActivity = examQueryRepository.getLastStudentActivityInstant(examId);
+            Optional<org.joda.time.Instant> maybeLastActivity = examQueryRepository.findLastStudentActivity(examId);
 
-            /* [174] In the legacy app, if lastActiviy = null, then DbComparator.lessThan(null, <not-null>) = false */
-            boolean isResumeable = maybeLastActivity.isPresent()
+            /* [178] In the legacy app, if lastActiviy = null, then DbComparator.lessThan(null, <not-null>) = false */
+            boolean isResumable = maybeLastActivity.isPresent()
                 && Minutes.minutesBetween(maybeLastActivity.get(), now).getMinutes() < timeLimitConfiguration.getExamRestartWindowMinutes();
 
-            /* [178 - 187] Move the resume/grace period restart increment and the exam update down in the flow of this code */
-            /* Skip TestOpportunityAudit code [189] */
+            /* [186 - 191] Move the resume/grace period restart increment and the exam update down in the flow of this code */
+            /* Skip TestOpportunityAudit code [193] */
             int startPosition = 1;     // Default startPosition to "1" for a restarted exam
 
-            /* TestOpportunityServiceImpl [199] / StudentDlLL [5424]
-             * Session type is always 1 (online) in TDS, so skip first conditional on [200]
+            /* TestOpportunityServiceImpl [204] / StudentDlLL [5424]
+             * Session type is always 0 (online) in TDS, so skip first conditional on [204]
              * No need to update restart count on line [203] because restart count can be derived from event table, so skip [202-203] */
 
-            if (isResumeable) { // Resume exam
+            if (isResumable) { // Resume exam
                 /* TestOpportunityServiceImpl [215] - Only need to get latest position when resuming, else its 1 */
                 startPosition = examItemService.getExamPosition(exam.getId());
                 /* This increment is done in TestOpportunityServiceImpl [179] */
                 resumptions++;
-            } else if (!isResumeable && assessment.getDeleteUnansweredItems()) { // Restart exam
+            } else if (assessment.shouldDeleteUnansweredItems()) { // Restart exam
                 // Mark the exam pages as "deleted"
                 examItemService.deletePages(exam.getId());
             }
@@ -435,7 +435,7 @@ class ExamServiceImpl implements ExamService {
             examCommandRepository.update(restartedExam);
             /* Skip restart increment on [209] because we are already incrementing earlier in this method */
             /* [212] No need to call updateUnifnishedResponsePages since we no longer need to keep count of "opportunityrestart" */
-            examConfig = getRestartedExamConfiguration(exam, assessment, timeLimitConfiguration, restartsAndResumptions, startPosition);
+            examConfig = getExamConfiguration(exam, assessment, timeLimitConfiguration, startPosition);
         }
 
         return new Response<>(examConfig);
@@ -453,6 +453,7 @@ class ExamServiceImpl implements ExamService {
             .withDateStarted(now)
             .withDateChanged(now)
             .withExpireFrom(now)
+            .withRestartsAndResumptions(0)
             .withMaxItems(testLength)
             .build();
 
@@ -466,23 +467,10 @@ class ExamServiceImpl implements ExamService {
         - scoreByTds has been removed as it is unused by the application.
     */
     private static ExamConfiguration initializeDefaultExamConfiguration(Exam exam, Assessment assessment, TimeLimitConfiguration timeLimitConfiguration) {
-        return new ExamConfiguration.Builder()
-            .withExam(exam)
-            .withContentLoadTimeout(CONTENT_LOAD_TIMEOUT)
-            .withInterfaceTimeout(timeLimitConfiguration.getInterfaceTimeoutMinutes())
-            .withExamRestartWindowMinutes(timeLimitConfiguration.getExamRestartWindowMinutes())
-            .withPrefetch(assessment.getPrefetch())
-            .withValidateCompleteness(assessment.isValidateCompleteness())
-            .withRequestInterfaceTimeout(timeLimitConfiguration.getRequestInterfaceTimeoutMinutes())
-            .withRestartsAndResumptions(0)
-            .withStartPosition(1)
-            .withStatus(ExamStatusCode.STATUS_STARTED)
-            .withTestLength(exam.getMaxItems())
-            .build();
+        return getExamConfiguration(exam, assessment, timeLimitConfiguration, 1);
     }
 
-    private static ExamConfiguration getRestartedExamConfiguration(Exam exam, Assessment assessment, TimeLimitConfiguration timeLimitConfiguration,
-                                                                   int restartAndResumptions, int startPosition) {
+    private static ExamConfiguration getExamConfiguration(Exam exam, Assessment assessment, TimeLimitConfiguration timeLimitConfiguration, int startPosition) {
         return new ExamConfiguration.Builder()
             .withExam(exam)
             .withContentLoadTimeout(CONTENT_LOAD_TIMEOUT)
@@ -491,7 +479,6 @@ class ExamServiceImpl implements ExamService {
             .withPrefetch(assessment.getPrefetch())
             .withValidateCompleteness(assessment.isValidateCompleteness())
             .withRequestInterfaceTimeout(timeLimitConfiguration.getRequestInterfaceTimeoutMinutes())
-            .withRestartsAndResumptions(restartAndResumptions)
             .withStartPosition(startPosition)
             .withStatus(ExamStatusCode.STATUS_STARTED)
             .withTestLength(exam.getMaxItems())

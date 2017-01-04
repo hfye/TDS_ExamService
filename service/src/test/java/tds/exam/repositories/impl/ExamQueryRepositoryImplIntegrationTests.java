@@ -166,7 +166,7 @@ public class ExamQueryRepositoryImplIntegrationTests {
 
         examCommandRepository.update(approvedExam);
 
-        Optional<Instant> maybeLastTimePaused = examQueryRepository.getLastStudentActivityInstant(exam.getId());
+        Optional<Instant> maybeLastTimePaused = examQueryRepository.findLastStudentActivity(exam.getId());
         assertThat(maybeLastTimePaused).isPresent();
         assertThat(maybeLastTimePaused.get()).isEqualTo(datePaused);
     }
@@ -186,7 +186,7 @@ public class ExamQueryRepositoryImplIntegrationTests {
 
         insertTestDataForResponses(datePageCreated, dateLastResponseSubmitted, dateEarlierResponseSubmitted, exam);
 
-        Optional<Instant> maybeLastTimeStudentResponded = examQueryRepository.getLastStudentActivityInstant(exam.getId());
+        Optional<Instant> maybeLastTimeStudentResponded = examQueryRepository.findLastStudentActivity(exam.getId());
         assertThat(maybeLastTimeStudentResponded).isPresent();
         assertThat(maybeLastTimeStudentResponded.get()).isEqualTo(dateLastResponseSubmitted);
     }
@@ -206,7 +206,7 @@ public class ExamQueryRepositoryImplIntegrationTests {
 
         insertTestDataForResponses(datePageCreated, dateLastResponseSubmitted, dateEarlierResponseSubmitted, exam);
 
-        Optional<Instant> maybeLastTimeStudentResponded = examQueryRepository.getLastStudentActivityInstant(exam.getId());
+        Optional<Instant> maybeLastTimeStudentResponded = examQueryRepository.findLastStudentActivity(exam.getId());
         assertThat(maybeLastTimeStudentResponded).isPresent();
         assertThat(maybeLastTimeStudentResponded.get()).isEqualTo(datePageCreated);
     }

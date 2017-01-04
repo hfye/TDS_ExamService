@@ -1,14 +1,13 @@
 package tds.exam.services;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
+import tds.exam.Exam;
 import tds.exam.models.ExamPage;
-import tds.exam.models.ExamResponse;
 
 /**
- * Created by emunoz on 12/28/16.
+ * Service for interacting with exam items, pages, and responses
  */
 public interface ExamItemService {
     /**

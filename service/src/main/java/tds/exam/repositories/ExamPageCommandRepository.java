@@ -21,5 +21,5 @@ public interface ExamPageCommandRepository {
      *
      * @param examId the id of the {@link tds.exam.Exam}
      */
-    void delete(UUID examId);
+    void deleteAll(UUID examId);
 }

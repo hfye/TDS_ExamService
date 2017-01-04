@@ -23,10 +23,6 @@ import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ExamItemServiceImplTest {
-
-    @Mock
-    private ExamResponseCommandRepository mockExamResponseCommandRepository;
-
     @Mock
     private ExamResponseQueryRepository mockExamResponseQueryRepository;
 
@@ -41,17 +37,17 @@ public class ExamItemServiceImplTest {
     @Before
     public void setUp() {
         examItemService = new ExamItemServiceImpl(mockExamPageQueryRepository, mockExamPageCommandRepository,
-            mockExamResponseQueryRepository, mockExamResponseCommandRepository);
+            mockExamResponseQueryRepository);
     }
 
     @Test
     public void shouldReturnLatestExamPositionForExamId() {
         final UUID examId = UUID.randomUUID();
         final int currentExamPosition = 9;
-        when(mockExamResponseQueryRepository.getExamPosition(examId)).thenReturn(currentExamPosition);
+        when(mockExamResponseQueryRepository.getCurrentExamItemPosition(examId)).thenReturn(currentExamPosition);
         int examPosition = examItemService.getExamPosition(examId);
         assertThat(examPosition).isEqualTo(currentExamPosition);
-        verify(mockExamResponseQueryRepository).getExamPosition(examId);
+        verify(mockExamResponseQueryRepository).getCurrentExamItemPosition(examId);
     }
 
     @Test
@@ -76,7 +72,7 @@ public class ExamItemServiceImplTest {
     public void shouldDeletePagesForExamId() {
         final UUID examId = UUID.randomUUID();
         examItemService.deletePages(examId);
-        verify(mockExamPageCommandRepository).delete(examId);
+        verify(mockExamPageCommandRepository).deleteAll(examId);
     }
 
     @Test

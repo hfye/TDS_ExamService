@@ -16,7 +16,7 @@ import java.util.Arrays;
 import tds.common.data.mysql.UuidAdapter;
 import tds.exam.Exam;
 import tds.exam.builder.ExamBuilder;
-import tds.exam.models.ExamResponse;
+import tds.exam.models.ExamItemResponse;
 import tds.exam.repositories.ExamCommandRepository;
 import tds.exam.repositories.ExamResponseCommandRepository;
 import tds.exam.repositories.ExamResponseQueryRepository;
@@ -69,23 +69,23 @@ public class ExamResponseRepositoryIntegrationTests {
         jdbcTemplate.update(insertPageEventSQL, testParams);
         jdbcTemplate.update(insertItemSQL, testParams);
 
-        ExamResponse examItem1Response = new ExamResponse.Builder()
+        ExamItemResponse examItem1Response = new ExamItemResponse.Builder()
             .withExamItemId(item1Id)
             .withResponse("response1")
             .build();
 
-        ExamResponse examItem2Response = new ExamResponse.Builder()
+        ExamItemResponse examItem2Response = new ExamItemResponse.Builder()
             .withExamItemId(item2Id)
             .withResponse("response2")
             .build();
 
-        ExamResponse examDeletedItemResponse = new ExamResponse.Builder()
+        ExamItemResponse examDeletedItemResponse = new ExamItemResponse.Builder()
             .withExamItemId(item3Id)
             .withResponse("response3")
             .build();
 
         examResponseCommandRepository.insert(Arrays.asList(examItem1Response, examItem2Response, examDeletedItemResponse));
-        int currentPosition = examResponseQueryRepository.getExamPosition(exam.getId());
+        int currentPosition = examResponseQueryRepository.getCurrentExamItemPosition(exam.getId());
         assertThat(currentPosition).isEqualTo(2);
     }
 }

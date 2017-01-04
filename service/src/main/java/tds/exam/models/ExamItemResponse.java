@@ -5,15 +5,15 @@ import org.joda.time.Instant;
 /**
  * Represents a response to an {@link tds.exam.models.ExamItem} of an {@link tds.exam.Exam}.
  */
-public class ExamResponse {
+public class ExamItemResponse {
     private long id;
     private long examItemId;
     private String response;
     private Instant createdAt;
 
-    private ExamResponse() {}
+    private ExamItemResponse() {}
 
-    public ExamResponse(Builder builder) {
+    public ExamItemResponse(Builder builder) {
         this.id = builder.id;
         this.examItemId = builder.examItemId;
         this.response = builder.response;
@@ -46,20 +46,20 @@ public class ExamResponse {
             return this;
         }
 
-        public ExamResponse build() {
-            return new ExamResponse(this);
+        public ExamItemResponse build() {
+            return new ExamItemResponse(this);
         }
     }
 
     /**
-     * @return the id of the {@link tds.exam.models.ExamResponse}
+     * @return the id of the {@link ExamItemResponse}
      */
     public long getId() {
         return id;
     }
 
     /**
-     * @return The id of the {@link tds.exam.models.ExamItem} the {@link tds.exam.models.ExamResponse} corresponds to
+     * @return The id of the {@link tds.exam.models.ExamItem} the {@link ExamItemResponse} corresponds to
      */
     public long getExamItemId() {
         return examItemId;

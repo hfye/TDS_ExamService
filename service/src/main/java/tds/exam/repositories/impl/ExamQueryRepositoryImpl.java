@@ -154,7 +154,7 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
     }
 
     @Override
-    public Optional<Instant> getLastStudentActivityInstant(final UUID id) {
+    public Optional<Instant> findLastStudentActivity(final UUID id) {
         final SqlParameterSource parameters = new MapSqlParameterSource("examId", UuidAdapter.getBytesFromUUID(id));
 
         final String SQL =
@@ -206,15 +206,15 @@ public class ExamQueryRepositoryImpl implements ExamQueryRepository {
                 "       PE.deleted_at IS NULL \n" +
                 ") as lastStudentActivityTime";
 
-        Optional<Instant> maybeLastPausedTime;
+        Optional<Instant> maybeLastStudentActivityTime;
         try {
             Timestamp lastPausedTime = jdbcTemplate.queryForObject(SQL, parameters, Timestamp.class);
-            maybeLastPausedTime = Optional.of(new Instant(lastPausedTime.getTime()));
+            maybeLastStudentActivityTime = Optional.of(new Instant(lastPausedTime.getTime()));
         } catch (EmptyResultDataAccessException e) {
-            maybeLastPausedTime = Optional.empty();
+            maybeLastStudentActivityTime = Optional.empty();
         }
 
-        return maybeLastPausedTime;
+        return maybeLastStudentActivityTime;
     }
 
     @Override

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import tds.exam.models.ExamResponse;
+import tds.exam.models.ExamItemResponse;
 import tds.exam.repositories.ExamResponseCommandRepository;
 
 /**
@@ -24,11 +24,11 @@ public class ExamResponseCommandRepositoryImpl implements ExamResponseCommandRep
     }
 
     @Override
-    public void insert(List<ExamResponse> examResponses) {
-        final List<SqlParameterSource> parameterSources = examResponses.stream()
+    public void insert(List<ExamItemResponse> examItemResponses) {
+        final SqlParameterSource[] parameterSources = examItemResponses.stream()
             .map(examResponse -> new MapSqlParameterSource("examItemId", examResponse.getExamItemId())
                 .addValue("response", examResponse.getResponse()))
-            .collect(Collectors.toList());
+            .toArray(size -> new SqlParameterSource[size]);
         final String examResponsesSQL =
             "INSERT INTO exam_item_response ( \n" +
             "   exam_item_id, response \n" +
@@ -37,6 +37,6 @@ public class ExamResponseCommandRepositoryImpl implements ExamResponseCommandRep
             "   :examItemId, :response \n" +
             ")";
 
-        jdbcTemplate.batchUpdate(examResponsesSQL, parameterSources.toArray(new SqlParameterSource[parameterSources.size()]));
+        jdbcTemplate.batchUpdate(examResponsesSQL, parameterSources);
     }
 }

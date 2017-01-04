@@ -51,7 +51,7 @@ public class ExamPageCommandRepositoryImpl implements ExamPageCommandRepository 
     }
 
     @Override
-    public void delete(final UUID examId) {
+    public void deleteAll(final UUID examId) {
         final SqlParameterSource params = new MapSqlParameterSource("examId", getBytesFromUUID(examId));
 
         final String SQL =

@@ -1500,7 +1500,6 @@ public class ExamServiceImplTest {
 
         assertThat(examConfigurationResponse.getData().isPresent()).isTrue();
         ExamConfiguration examConfiguration = examConfigurationResponse.getData().get();
-        assertThat(examConfiguration.getRestartsAndResumptions()).isEqualTo(0);
         assertThat(examConfiguration.getContentLoadTimeoutMinutes()).isEqualTo(120);
         assertThat(examConfiguration.getExam().getId()).isEqualTo(exam.getId());
         assertThat(examConfiguration.getExamRestartWindowMinutes()).isEqualTo(timeLimitConfiguration.getExamRestartWindowMinutes());
@@ -1552,7 +1551,7 @@ public class ExamServiceImplTest {
 
         when(mockSessionService.findExternalSessionConfigurationByClientName(exam.getClientName())).thenReturn(Optional.of(extSessionConfig));
         when(mockExamQueryRepository.getExamById(exam.getId())).thenReturn(Optional.of(exam));
-        when(mockExamQueryRepository.getLastStudentActivityInstant(exam.getId())).thenReturn(Optional.of(lastStudentActivityTime));
+        when(mockExamQueryRepository.findLastStudentActivity(exam.getId())).thenReturn(Optional.of(lastStudentActivityTime));
         when(mockSessionService.findSessionById(exam.getSessionId())).thenReturn(Optional.of(session));
         when(mockAssessmentService.findAssessment(exam.getClientName(), exam.getAssessmentKey()))
             .thenReturn(Optional.of(assessment));
@@ -1567,11 +1566,11 @@ public class ExamServiceImplTest {
         verify(mockAssessmentService).findAssessment(exam.getClientName(), exam.getAssessmentKey());
         verify(mockTimeLimitConfigurationService).findTimeLimitConfiguration(exam.getClientName(), assessment.getAssessmentId());
         verify(mockExamCommandRepository).update(examArgumentCaptor.capture());
-        verify(mockExamQueryRepository).getLastStudentActivityInstant(exam.getId());
+        verify(mockExamQueryRepository).findLastStudentActivity(exam.getId());
 
         assertThat(examConfigurationResponse.getData().isPresent()).isTrue();
         ExamConfiguration examConfiguration = examConfigurationResponse.getData().get();
-        assertThat(examConfiguration.getRestartsAndResumptions()).isEqualTo(6);
+        assertThat(examConfiguration.getExam().getRestartsAndResumptions()).isEqualTo(5);
         assertThat(examConfiguration.getContentLoadTimeoutMinutes()).isEqualTo(120);
         assertThat(examConfiguration.getExam().getId()).isEqualTo(exam.getId());
         assertThat(examConfiguration.getExamRestartWindowMinutes()).isEqualTo(timeLimitConfiguration.getExamRestartWindowMinutes());
@@ -1588,7 +1587,7 @@ public class ExamServiceImplTest {
         assertThat(updatedExam.getMaxItems()).isEqualTo(testLength);
         assertThat(updatedExam.getDateStarted()).isNotNull();
         assertThat(updatedExam.getResumptions()).isEqualTo(3);
-        assertThat(updatedExam.getRestartAndResumptions()).isEqualTo(6);
+        assertThat(updatedExam.getRestartsAndResumptions()).isEqualTo(6);
         assertThat(updatedExam.getDateChanged()).isGreaterThan(exam.getDateChanged());
         assertThat(updatedExam.getExpireFrom()).isNull();
         assertThat(updatedExam.getStatus().getStage()).isEqualTo(ExamStatusStage.IN_PROGRESS);
@@ -1626,7 +1625,7 @@ public class ExamServiceImplTest {
 
         when(mockSessionService.findExternalSessionConfigurationByClientName(exam.getClientName())).thenReturn(Optional.of(extSessionConfig));
         when(mockExamQueryRepository.getExamById(exam.getId())).thenReturn(Optional.of(exam));
-        when(mockExamQueryRepository.getLastStudentActivityInstant(exam.getId())).thenReturn(Optional.of(lastStudentActivityTime));
+        when(mockExamQueryRepository.findLastStudentActivity(exam.getId())).thenReturn(Optional.of(lastStudentActivityTime));
         when(mockSessionService.findSessionById(exam.getSessionId())).thenReturn(Optional.of(session));
         when(mockAssessmentService.findAssessment(exam.getClientName(), exam.getAssessmentKey()))
             .thenReturn(Optional.of(assessment));
@@ -1644,12 +1643,12 @@ public class ExamServiceImplTest {
         verify(mockTimeLimitConfigurationService).findTimeLimitConfiguration(exam.getClientName(), assessment.getAssessmentId());
         verify(mockExamCommandRepository).update(examArgumentCaptor.capture());
         verify(mockExamItemService).getExamPosition(exam.getId());
-        verify(mockExamQueryRepository).getLastStudentActivityInstant(exam.getId());
+        verify(mockExamQueryRepository).findLastStudentActivity(exam.getId());
         verify(mockExamItemService).getExamPosition(exam.getId());
 
         assertThat(examConfigurationResponse.getData().isPresent()).isTrue();
         ExamConfiguration examConfiguration = examConfigurationResponse.getData().get();
-        assertThat(examConfiguration.getRestartsAndResumptions()).isEqualTo(6);
+        assertThat(examConfiguration.getExam().getRestartsAndResumptions()).isEqualTo(5);
         assertThat(examConfiguration.getContentLoadTimeoutMinutes()).isEqualTo(120);
         assertThat(examConfiguration.getExam().getId()).isEqualTo(exam.getId());
         assertThat(examConfiguration.getExamRestartWindowMinutes()).isEqualTo(timeLimitConfiguration.getExamRestartWindowMinutes());
@@ -1666,7 +1665,7 @@ public class ExamServiceImplTest {
         assertThat(updatedExam.getMaxItems()).isEqualTo(testLength);
         assertThat(updatedExam.getDateStarted()).isNotNull();
         assertThat(updatedExam.getResumptions()).isEqualTo(4);
-        assertThat(updatedExam.getRestartAndResumptions()).isEqualTo(6);
+        assertThat(updatedExam.getRestartsAndResumptions()).isEqualTo(6);
         assertThat(updatedExam.getDateChanged()).isGreaterThan(exam.getDateChanged());
         assertThat(updatedExam.getExpireFrom()).isNull();
         assertThat(updatedExam.getStatus().getStage()).isEqualTo(ExamStatusStage.IN_PROGRESS);
