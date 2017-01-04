@@ -82,7 +82,6 @@ public class ExamBuilder {
             .withCustomAccommodation(customAccommodations)
             .withResumptions(resumptions)
             .withRestartsAndResumptions(restartsAndResumptions)
-
             .build();
     }
 
