@@ -1,6 +1,7 @@
 package tds.exam.repositories.impl;
 
 import org.joda.time.Instant;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -22,6 +23,7 @@ import static tds.common.data.mapping.ResultSetMapperUtility.mapJodaInstantToTim
 public class ExamAccommodationCommandRepositoryImpl implements ExamAccommodationCommandRepository {
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
+    @Autowired
     public ExamAccommodationCommandRepositoryImpl(@Qualifier("commandJdbcTemplate") NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }

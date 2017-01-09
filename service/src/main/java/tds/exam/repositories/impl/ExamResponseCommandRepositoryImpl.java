@@ -1,5 +1,6 @@
 package tds.exam.repositories.impl;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -7,7 +8,6 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import tds.exam.models.ExamItemResponse;
 import tds.exam.repositories.ExamResponseCommandRepository;
@@ -19,6 +19,7 @@ import tds.exam.repositories.ExamResponseCommandRepository;
 public class ExamResponseCommandRepositoryImpl implements ExamResponseCommandRepository {
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
+    @Autowired
     public ExamResponseCommandRepositoryImpl(@Qualifier("commandJdbcTemplate") NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
