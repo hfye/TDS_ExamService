@@ -38,7 +38,8 @@ public class EqualDistributionFieldTestItemGroupSelector implements FieldTestIte
     }
 
     @Override
-    public List<FieldTestItemGroup> selectItemGroupsLeastUsed(Exam exam, Set<String> assignedGroupIds, Assessment assessment, String segmentKey, int numItems) {
+    public List<FieldTestItemGroup> selectItemGroupsLeastUsed(final Exam exam, final Set<String> assignedGroupIds,
+                                                              final Assessment assessment, final String segmentKey, final int numItems) {
         int ftItemCount = 0;
         Segment currentSegment = assessment.getSegment(segmentKey);
         // Fetch every eligible item based on item constraints, item properties, and user accommodations

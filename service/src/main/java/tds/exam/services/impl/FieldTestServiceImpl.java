@@ -80,7 +80,7 @@ public class FieldTestServiceImpl implements FieldTestService {
         This code covers legacy StudentDLL._FT_SelectItemgroups_SP [line 3033] and is called by _InitializeTestSegments_SP [4704]
      */
     @Override
-    public int selectItemGroups(Exam exam, Assessment assessment, String segmentKey) {
+    public int selectItemGroups(final Exam exam, final Assessment assessment, final String segmentKey) {
         Segment currentSegment = assessment.getSegment(segmentKey);
         List<FieldTestItemGroup> previouslyAssignedFieldTestItemGroups = fieldTestItemGroupQueryRepository.find(exam.getId(), segmentKey);
 
