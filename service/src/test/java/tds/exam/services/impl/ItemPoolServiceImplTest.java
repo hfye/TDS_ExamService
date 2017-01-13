@@ -13,6 +13,7 @@ import tds.assessment.Item;
 import tds.assessment.ItemConstraint;
 import tds.assessment.ItemProperty;
 import tds.exam.ExamAccommodation;
+import tds.exam.builder.ItemBuilder;
 import tds.exam.services.ExamAccommodationService;
 import tds.exam.services.ItemPoolService;
 
@@ -57,12 +58,15 @@ public class ItemPoolServiceImplTest {
         itemProperties3.add(new ItemProperty("--ITEMTYPE--", "MI", "Matching Item", itemId3));
 
         List<Item> items = new ArrayList<>();
-        Item item1 = new Item(itemId1);
-        item1.setItemProperties(itemProperties1);
-        Item item2 = new Item(itemId2);
-        item2.setItemProperties(itemProperties2);
-        Item item3 = new Item(itemId3);
-        item3.setItemProperties(itemProperties3);
+        Item item1 = new ItemBuilder(itemId1)
+            .withItemProperties(itemProperties1)
+            .build();
+        Item item2 = new ItemBuilder(itemId2)
+            .withItemProperties(itemProperties2)
+            .build();
+        Item item3 = new ItemBuilder(itemId3)
+            .withItemProperties(itemProperties3)
+            .build();
 
         items.add(item1);
         items.add(item2);
@@ -150,12 +154,16 @@ public class ItemPoolServiceImplTest {
         itemProperties3.add(new ItemProperty("--ITEMTYPE--", "MI", "Matching Item", itemId3));
 
         List<Item> items = new ArrayList<>();
-        Item item1 = new Item(itemId1);
-        item1.setItemProperties(itemProperties1);
-        Item item2 = new Item(itemId2);
-        item2.setItemProperties(itemProperties2);
-        Item item3 = new Item(itemId3);
-        item3.setItemProperties(itemProperties3);
+        Item item1 = new ItemBuilder(itemId1)
+            .withItemProperties(itemProperties1)
+            .build();
+        Item item2 = new ItemBuilder(itemId2)
+            .withItemProperties(itemProperties2)
+            .build();
+        Item item3 = new ItemBuilder(itemId3)
+            .withItemProperties(itemProperties3)
+            .build();
+
         items.add(item1);
         items.add(item2);
         items.add(item3);
@@ -307,17 +315,19 @@ public class ItemPoolServiceImplTest {
         itemProperties1.add(new ItemProperty("--ITEMTYPE--", "ER", "Extended Response", itemId3));
 
         List<Item> items = new ArrayList<>();
-        Item ftItem1 = new Item(itemId1);
-        ftItem1.setFieldTest(true);
-        ftItem1.setItemProperties(itemProperties1);
+        Item ftItem1 = new ItemBuilder(itemId1)
+            .withFieldTest(true)
+            .withItemProperties(itemProperties1)
+            .build();
 
-        Item ftItem2 = new Item(itemId2);
-        ftItem2.setFieldTest(true);
-        ftItem2.setItemProperties(itemProperties2);
+        Item ftItem2 = new ItemBuilder(itemId2)
+            .withFieldTest(true)
+            .withItemProperties(itemProperties2)
+            .build();
 
-        Item regularItem = new Item(itemId3);
-        regularItem.setFieldTest(false);
-        regularItem.setItemProperties(itemProperties3);
+        Item regularItem = new ItemBuilder(itemId3)
+            .withItemProperties(itemProperties1)
+            .build();
 
         items.add(ftItem1);
         items.add(ftItem2);
