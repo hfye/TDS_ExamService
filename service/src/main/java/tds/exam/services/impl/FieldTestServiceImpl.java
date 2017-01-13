@@ -1,20 +1,14 @@
 package tds.exam.services.impl;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import org.joda.time.Instant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import tds.assessment.Assessment;
@@ -24,10 +18,8 @@ import tds.exam.Exam;
 import tds.exam.models.FieldTestItemGroup;
 import tds.exam.repositories.FieldTestItemGroupCommandRepository;
 import tds.exam.repositories.FieldTestItemGroupQueryRepository;
-import tds.exam.services.AssessmentService;
 import tds.exam.services.FieldTestItemGroupSelector;
 import tds.exam.services.FieldTestService;
-import tds.exam.services.ItemPoolService;
 import tds.session.ExternalSessionConfiguration;
 
 @Service
@@ -44,6 +36,7 @@ public class FieldTestServiceImpl implements FieldTestService {
         this.fieldTestItemGroupCommandRepository = fieldTestItemGroupCommandRepository;
         this.fieldTestItemGroupSelector = fieldTestItemGroupSelector;
     }
+
 
     @Override
     public boolean isFieldTestEligible(Exam exam, Assessment assessment, String segmentKey) {
@@ -121,7 +114,7 @@ public class FieldTestServiceImpl implements FieldTestService {
         List<FieldTestItemGroup> selectedFieldTestItemGroups = fieldTestItemGroupSelector.selectItemGroupsLeastUsed(exam, assignedGroupIds, assessment,
             segmentKey, minItems);
 
-        /* [3240-3242] endPos variable is never used - only read from in debug mode */
+        /* [3240-3242] endPos variable is never used again, no need to increment it - only read from in debug mode */
         /* [3244] no need to select an unused groupkey - we know our FieldTestGroupItems have unique groupkeys. */
         /* [3244-3246] Since we have list of unused items returned by selectItemgroupsRoundRobin(), no need to check that groupkey exists */
         List<FieldTestItemGroup> selectedItemGroups = new ArrayList<>();
@@ -188,5 +181,4 @@ public class FieldTestServiceImpl implements FieldTestService {
 
         return endTime == null ? true : endTime.isAfterNow();
     }
-
 }

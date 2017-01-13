@@ -30,29 +30,29 @@ public class FieldTestItemGroupCommandRepositoryImpl implements FieldTestItemGro
     public void insert(List<FieldTestItemGroup> fieldTestItemGroups) {
         final String ftItemGroupSQL =
             "INSERT INTO field_test_item_group ( \n" +
-            "   exam_id, \n" +
-            "   position, \n" +
-            "   num_items, \n" +
-            "   segment_id, \n" +
-            "   segment_key, \n" +
-            "   group_id, \n" +
-            "   group_key, \n" +
-            "   block_id, \n" +
-            "   session_id, \n" +
-            "   language_code \n" +
-            ") \n " +
-            "VALUES ( \n" +
-            "   :examId, \n" +
-            "   :position, \n" +
-            "   :numItems, \n" +
-            "   :segmentId, \n" +
-            "   :segmentKey, \n" +
-            "   :groupId, \n" +
-            "   :groupKey, \n" +
-            "   :blockId, \n" +
-            "   :sessionId, \n" +
-            "   :languageCode \n" +
-            ")";
+                "   exam_id, \n" +
+                "   position, \n" +
+                "   num_items, \n" +
+                "   segment_id, \n" +
+                "   segment_key, \n" +
+                "   group_id, \n" +
+                "   group_key, \n" +
+                "   block_id, \n" +
+                "   session_id, \n" +
+                "   language_code \n" +
+                ") \n " +
+                "VALUES ( \n" +
+                "   :examId, \n" +
+                "   :position, \n" +
+                "   :numItems, \n" +
+                "   :segmentId, \n" +
+                "   :segmentKey, \n" +
+                "   :groupId, \n" +
+                "   :groupKey, \n" +
+                "   :blockId, \n" +
+                "   :sessionId, \n" +
+                "   :languageCode \n" +
+                ")";
 
         fieldTestItemGroups.forEach(fieldTestItemGroup -> {
             SqlParameterSource parameterSources = new MapSqlParameterSource("examId", getBytesFromUUID(fieldTestItemGroup.getExamId()))
@@ -82,17 +82,17 @@ public class FieldTestItemGroupCommandRepositoryImpl implements FieldTestItemGro
 
         final String updateSQL =
             "INSERT INTO field_test_item_group_event ( \n" +
-            "   field_test_item_group_id, \n" +
-            "   deleted_at, \n" +
-            "   position_administered, \n" +
-            "   administered_at \n" +
-            ") \n" +
-            "VALUES ( \n"  +
-            "   :id, \n" +
-            "   :deletedAt, \n" +
-            "   :positionAdministered, \n" +
-            "   :administeredAt \n" +
-            ")";
+                "   field_test_item_group_id, \n" +
+                "   deleted_at, \n" +
+                "   position_administered, \n" +
+                "   administered_at \n" +
+                ") \n" +
+                "VALUES ( \n" +
+                "   :id, \n" +
+                "   :deletedAt, \n" +
+                "   :positionAdministered, \n" +
+                "   :administeredAt \n" +
+                ")";
 
         jdbcTemplate.update(updateSQL, params);
     }
